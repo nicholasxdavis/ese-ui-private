@@ -12,8 +12,7 @@
     "not_found_handling": "404-page",
     "run_worker_first": [
       "/api/*",
-      "/public/menu.pdf",
-      "/public/catering.pdf"
+      "/public/*"
     ]
   },
   "kv_namespaces": [
