@@ -92,8 +92,8 @@ Production specials are **KV-backed** (`special` key) and never wiped on scrape 
 
 1. Action runs hardened `scripts/push-specials.mjs` (UA rotation, retries, cache-bust, RSSHub mirrors, optional `facebook-scraper`, image download)
 2. `POST /api/specials/ingest` with `X-Ingest-Secret` caches images in KV
-3. Worker also attempts Graph API (if token) + Browser Rendering
-4. Homepage hides the Special section when `found` is false / no posts
+3. Homepage hides the Special section when `found` is false / no posts
+4. **Freshness rule:** captions with a calendar date older than yesterday (e.g. April 21 / Aug 21) are rejected; posts older than ~36h are never shown. No historic fallback.
 
 ### Secrets (Cloudflare Worker)
 

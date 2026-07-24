@@ -55,14 +55,17 @@ results.push(
 results.push(
   await check('GET /api/specials', async () => {
     const data = await (await mustOk('/api/specials')).json();
-    if (!data.found && !(data.posts && data.posts.length)) {
-      throw new Error('no specials payload');
-    }
-    const post = (data.posts && data.posts[0]) || data.post;
-    if (!post) throw new Error('missing post');
-    if (post.image && String(post.image).startsWith('/api/specials/media/')) {
-      const media = await fetch(base + post.image);
-      if (!media.ok) throw new Error('special media ' + media.status);
+    // found may be false when no fresh (≤1 day) special — that is valid
+    if (typeof data.found !== 'boolean') throw new Error('missing found');
+    if (data.found) {
+      const post = (data.posts && data.posts[0]) || data.post;
+      if (!post) throw new Error('found=true but missing post');
+      if (post.image && String(post.image).startsWith('/api/specials/media/')) {
+        const media = await fetch(base + post.image);
+        if (!media.ok) throw new Error('special media ' + media.status);
+      }
+    } else if (Array.isArray(data.posts) && data.posts.length) {
+      throw new Error('found=false but posts present');
     }
   })
 );

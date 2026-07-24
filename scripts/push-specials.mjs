@@ -28,7 +28,7 @@ const INGEST_SECRET = process.env.INGEST_SECRET || '';
 const APIFY_TOKEN = process.env.APIFY_TOKEN || '';
 const APIFY_ACTOR = process.env.APIFY_ACTOR_ID || 'apify/facebook-posts-scraper';
 
-const SEED = ['https://www.facebook.com/share/p/14YXEbC1wLB/'];
+const SEED = [];
 const UAS = [
   'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
@@ -137,7 +137,7 @@ function meta(html, prop) {
   return null;
 }
 
-/** Keep in sync with worker/specials.js isSpecialText */
+/** Keep in sync with worker/specials.js isSpecialText + freshness */
 function isSpecial(text) {
   const s = String(text || '').toLowerCase();
   if (!s.trim()) return false;
@@ -159,6 +159,61 @@ function isSpecial(text) {
   }
   if (/\$\d/.test(s) && /(call|order|pick\s*up|plate|burger|taco|enchilada)/.test(s)) return true;
   return false;
+}
+
+const MONTHS = {
+  jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
+  may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9,
+  september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12
+};
+
+function denverTodayKey(d = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Denver' }).format(d);
+}
+
+function parseCaptionDateKey(text) {
+  const s = String(text || '');
+  const yearHint = Number(denverTodayKey().slice(0, 4));
+  const named = s.match(
+    /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/i
+  );
+  if (named) {
+    const month = MONTHS[named[1].toLowerCase().replace(/\.$/, '')];
+    const day = Number(named[2]);
+    if (month && day >= 1 && day <= 31) {
+      return `${yearHint}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+  }
+  const numeric = s.match(/\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
+  if (numeric) {
+    const month = Number(numeric[1]);
+    const day = Number(numeric[2]);
+    let year = numeric[3] ? Number(numeric[3]) : yearHint;
+    if (year < 100) year += 2000;
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+  }
+  return null;
+}
+
+function addDaysKey(key, delta) {
+  const [y, m, d] = key.split('-').map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d + delta));
+  return `${utc.getUTCFullYear()}-${String(utc.getUTCMonth() + 1).padStart(2, '0')}-${String(utc.getUTCDate()).padStart(2, '0')}`;
+}
+
+function isFreshCaptionOrPublished(caption, publishedIso) {
+  const today = denverTodayKey();
+  const captionKey = parseCaptionDateKey(caption);
+  if (captionKey && captionKey !== today && captionKey !== addDaysKey(today, -1)) return false;
+  if (publishedIso) {
+    const age = Date.now() - Date.parse(publishedIso);
+    if (!Number.isNaN(age) && age > 36 * 60 * 60 * 1000) return false;
+    if (!Number.isNaN(age) && age < -36 * 60 * 60 * 1000) return false;
+    return true;
+  }
+  return !!(captionKey && (captionKey === today || captionKey === addDaysKey(today, -1)));
 }
 
 function loadFileUrls() {
@@ -378,9 +433,14 @@ for (const url of targets) {
   const desc = meta(html, 'og:description') || '';
   const image = meta(html, 'og:image');
   const canonical = meta(html, 'og:url') || url;
+  const published = meta(html, 'article:published_time') || meta(html, 'og:updated_time') || null;
   const caption = title && desc && title !== desc ? `${title}\n${desc}` : desc || title;
   if (!isSpecial(caption) && !isSpecial(title)) {
     console.log('  skip', JSON.stringify((caption || title).slice(0, 70)));
+    continue;
+  }
+  if (!isFreshCaptionOrPublished(caption, published)) {
+    console.log('  stale', parseCaptionDateKey(caption) || published || 'no-date');
     continue;
   }
   collected.push({
@@ -388,6 +448,7 @@ for (const url of targets) {
     link: canonical,
     captionText: caption,
     image,
+    published,
     source: 'facebook-og-push'
   });
   console.log('  ok');
@@ -426,6 +487,10 @@ const posts = [];
 const seen = new Set();
 for (const raw of collected) {
   if (!isSpecial(raw.captionText || raw.title)) continue;
+  if (!isFreshCaptionOrPublished(raw.captionText || raw.title, raw.published || null)) {
+    console.log('  drop stale', (raw.captionText || '').slice(0, 60));
+    continue;
+  }
   const id = normalizeId(raw.link, raw.captionText);
   if (seen.has(id)) continue;
   seen.add(id);
@@ -439,7 +504,7 @@ for (const raw of collected) {
     network: 'facebook',
     title: raw.title || 'Special',
     link: raw.link || `https://www.facebook.com/${PAGE}/`,
-    published: raw.published || new Date().toISOString(),
+    published: raw.published || null,
     captionText: raw.captionText || raw.title || '',
     image: raw.image || null,
     imageRemote: raw.image || null,

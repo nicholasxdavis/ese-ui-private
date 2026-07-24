@@ -10,10 +10,11 @@ const FB_PAGE_URL = `https://www.facebook.com/${FB_PAGE}/`;
 const TZ = 'America/Denver';
 const MAX_SPECIALS = 8;
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+/** Do not show specials older than this (ms). */
+const MAX_AGE_MS = 36 * 60 * 60 * 1000;
 
-const SEED_SHARE_URLS = [
-  'https://www.facebook.com/share/p/14YXEbC1wLB/'
-];
+/** Only intentionally current share/post URLs — never pin old specials here. */
+const SEED_SHARE_URLS = [];
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
@@ -113,6 +114,163 @@ function publishedLocalKey(iso) {
   }
 }
 
+const MONTHS = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12
+};
+
+/**
+ * Pull an explicit calendar date from caption text (e.g. "April 21", "Aug 21st", "8/21").
+ * Returns YYYY-MM-DD in America/Denver year context, or null.
+ */
+export function parseCaptionDateKey(text, ref = new Date()) {
+  const s = String(text || '');
+  if (!s.trim()) return null;
+  const today = localParts(ref);
+  const yearHint = Number(today.y);
+
+  const named = s.match(
+    /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/i
+  );
+  if (named) {
+    const month = MONTHS[named[1].toLowerCase().replace(/\.$/, '')];
+    const day = Number(named[2]);
+    if (month && day >= 1 && day <= 31) {
+      return `${yearHint}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+  }
+
+  const numeric = s.match(/\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
+  if (numeric) {
+    const month = Number(numeric[1]);
+    const day = Number(numeric[2]);
+    let year = numeric[3] ? Number(numeric[3]) : yearHint;
+    if (year < 100) year += 2000;
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+  }
+  return null;
+}
+
+function addDaysKey(key, delta) {
+  const [y, m, d] = key.split('-').map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d + delta));
+  return `${utc.getUTCFullYear()}-${String(utc.getUTCMonth() + 1).padStart(2, '0')}-${String(utc.getUTCDate()).padStart(2, '0')}`;
+}
+
+function isTodayOrYesterday(key, ref = new Date()) {
+  if (!key) return false;
+  const today = localParts(ref).key;
+  return key === today || key === addDaysKey(today, -1);
+}
+
+/**
+ * Resolve best-effort publish time. Never invent "now" for undated OG scrapes —
+ * that made April/Aug specials look fresh forever.
+ */
+export function resolvePublishedIso(post, scrapedAt = null) {
+  const meta = post.published || post.created_time || post.publishedAt || null;
+  if (meta) {
+    const t = Date.parse(meta);
+    if (!Number.isNaN(t)) return new Date(t).toISOString();
+  }
+  const captionKey = parseCaptionDateKey(post.captionText || post.title || '');
+  if (captionKey) {
+    // Noon Denver ≈ 18:00/19:00 UTC depending on DST — store as date-only noon Z for sorting
+    return `${captionKey}T18:00:00.000Z`;
+  }
+  // Timeline scrapes from this run may use scrape time only when source says so
+  const src = String(post.source || '');
+  if (scrapedAt && /timeline|browser-timeline|graph/i.test(src)) {
+    return scrapedAt;
+  }
+  return null;
+}
+
+/** True when post is allowed on the homepage (≤ ~1 day old, caption date not ancient). */
+export function isFreshSpecial(post, now = new Date()) {
+  if (!post) return false;
+  if (String(post.source || '') === 'test') return false;
+  const text = `${post.captionText || ''}\n${post.title || ''}`;
+  if (!isSpecialText(text)) return false;
+
+  const captionKey = parseCaptionDateKey(text, now);
+  if (captionKey && !isTodayOrYesterday(captionKey, now)) {
+    return false;
+  }
+
+  const published = resolvePublishedIso(post);
+  if (published) {
+    const ts = Date.parse(published);
+    if (!Number.isNaN(ts) && now.getTime() - ts > MAX_AGE_MS) return false;
+    // Future posts more than a day out are also invalid
+    if (!Number.isNaN(ts) && ts - now.getTime() > MAX_AGE_MS) return false;
+    return true;
+  }
+
+  // No usable date → only allow if caption explicitly says today/yesterday
+  return !!(captionKey && isTodayOrYesterday(captionKey, now));
+}
+
+export function filterFreshPosts(posts, now = new Date()) {
+  return (Array.isArray(posts) ? posts : [])
+    .map((p) => {
+      const published = resolvePublishedIso(p) || p.published || null;
+      return { ...p, published };
+    })
+    .filter((p) => isFreshSpecial(p, now))
+    .sort((a, b) => (Date.parse(b.published || 0) || 0) - (Date.parse(a.published || 0) || 0));
+}
+
+/** Public API shape — never expose stale specials. */
+export function publicSpecialsView(raw, now = new Date()) {
+  const base = raw && typeof raw === 'object' ? raw : {};
+  const candidates = [
+    ...(Array.isArray(base.posts) ? base.posts : []),
+    base.post,
+    ...(Array.isArray(base.allKnown) ? base.allKnown : [])
+  ].filter(Boolean);
+  const fresh = filterFreshPosts(dedupePosts(candidates.map((p) => normalizePost(p))), now).slice(
+    0,
+    MAX_SPECIALS
+  );
+  return {
+    ...base,
+    updatedAt: base.updatedAt || nowIso(),
+    scrapedAt: base.scrapedAt || null,
+    timezone: TZ,
+    localDate: localParts(now).key,
+    found: fresh.length > 0,
+    stale: false,
+    post: fresh[0] || null,
+    posts: fresh,
+    allKnown: Array.isArray(base.allKnown) ? base.allKnown.slice(0, 40) : fresh
+  };
+}
+
 function postIdFromUrl(url) {
   const u = String(url || '');
   const m =
@@ -188,14 +346,13 @@ function parseOgHtml(html, url, source) {
     metaProp(html, 'og:description') || metaProp(html, 'twitter:description') || '';
   const image = metaProp(html, 'og:image') || metaProp(html, 'twitter:image');
   const canonical = metaProp(html, 'og:url') || url;
+  // Never invent "now" — that made old share URLs look fresh forever
   const published =
-    metaProp(html, 'article:published_time') ||
-    metaProp(html, 'og:updated_time') ||
-    nowIso();
+    metaProp(html, 'article:published_time') || metaProp(html, 'og:updated_time') || null;
   const caption =
     title && desc && title !== desc ? `${title}\n${desc}` : desc || title;
   if (!isSpecialText(caption) && !isSpecialText(title)) return null;
-  return normalizePost({
+  const post = normalizePost({
     title: title || 'Facebook special',
     link: canonical,
     captionText: caption,
@@ -204,6 +361,9 @@ function parseOgHtml(html, url, source) {
     source,
     network: 'facebook'
   });
+  post.published = resolvePublishedIso(post);
+  if (!isFreshSpecial(post)) return null;
+  return post;
 }
 
 async function scrapeOgViaBrowserPage(page, url) {
@@ -231,10 +391,12 @@ async function scrapeOgViaBrowserPage(page, url) {
         captionText: visible.text,
         link: url,
         image: visible.image,
-        published: nowIso(),
+        published: null,
         source: 'facebook-browser-og',
         network: 'facebook'
       });
+      post.published = resolvePublishedIso(post);
+      if (!isFreshSpecial(post)) return null;
     }
 
     if (post?.image) {
@@ -374,17 +536,18 @@ async function scrapeWithBrowser(env, seedUrls = []) {
       for (const u of extracted.urls || []) discoveredUrls.push(u);
       for (const p of extracted.posts || []) {
         if (!isSpecialText(p.text)) continue;
-        specials.push(
-          normalizePost({
-            title: p.text.split('\n').find((l) => l.trim()) || 'Special',
-            captionText: p.text,
-            link: p.link || FB_PAGE_URL,
-            image: p.image,
-            published: nowIso(),
-            source: 'facebook-browser',
-            network: 'facebook'
-          })
-        );
+        const scrapedAt = nowIso();
+        const post = normalizePost({
+          title: p.text.split('\n').find((l) => l.trim()) || 'Special',
+          captionText: p.text,
+          link: p.link || FB_PAGE_URL,
+          image: p.image,
+          published: null,
+          source: 'facebook-browser-timeline',
+          network: 'facebook'
+        });
+        post.published = resolvePublishedIso(post, scrapedAt);
+        if (isFreshSpecial(post)) specials.push(post);
       }
 
       // C) Newly discovered post URLs → browser OG
@@ -504,33 +667,10 @@ function dedupePosts(posts) {
 }
 
 /**
- * Prefer today's specials (Denver). Else most recent specials within 7 days.
- * Always return something if history exists.
+ * Only fresh specials (≤ ~1 day). Never fall back to week-old / historic posts.
  */
-export function selectDisplayPosts(allPosts) {
-  const today = localParts().key;
-  const withDays = allPosts
-    .map((p) => ({
-      ...p,
-      _day: publishedLocalKey(p.published),
-      _ts: Date.parse(p.published || 0) || 0
-    }))
-    .sort((a, b) => b._ts - a._ts);
-
-  const todays = withDays.filter((p) => p._day === today);
-  if (todays.length) return todays.slice(0, MAX_SPECIALS).map(stripInternal);
-
-  const weekMs = 7 * 24 * 60 * 60 * 1000;
-  const now = Date.now();
-  const recent = withDays.filter((p) => p._ts && now - p._ts < weekMs);
-  if (recent.length) return recent.slice(0, MAX_SPECIALS).map(stripInternal);
-
-  return withDays.slice(0, Math.min(3, MAX_SPECIALS)).map(stripInternal);
-}
-
-function stripInternal(p) {
-  const { _day, _ts, ...rest } = p;
-  return rest;
+export function selectDisplayPosts(allPosts, now = new Date()) {
+  return filterFreshPosts(allPosts, now).slice(0, MAX_SPECIALS);
 }
 
 function buildPayload({ posts, source, errors, previous, scrapeOk }) {
@@ -544,10 +684,11 @@ function buildPayload({ posts, source, errors, previous, scrapeOk }) {
     source,
     found,
     scrapeOk: !!scrapeOk,
-    stale: !scrapeOk && !!(previous && previous.found),
+    stale: !scrapeOk && !found,
     post: display[0] || null,
     posts: display,
-    allKnown: posts.slice(0, 40).map(stripInternal),
+    // Keep known list for seed discovery only — display never uses stale entries
+    allKnown: posts.slice(0, 40),
     errors: (errors || []).slice(0, 40)
   };
 }
@@ -609,65 +750,67 @@ export async function refreshSpecials(env, { force = false } = {}) {
     }
   }
 
-  const fresh = dedupePosts(collected).filter((p) => isSpecialText(p.captionText || p.title));
+  const scrapedAt = nowIso();
+  const fresh = dedupePosts(collected)
+    .map((p) => {
+      const n = normalizePost(p);
+      n.published = resolvePublishedIso(n, scrapedAt);
+      return n;
+    })
+    .filter((p) => isFreshSpecial(p));
   const scrapeOk = fresh.length > 0;
 
-  // Merge with previous known specials so history / carousel survives outages
-  collected = fresh;
+  // Merge prior known for seed discovery only — display uses freshness filter
+  let known = fresh;
   if (previous?.allKnown?.length) {
-    collected = dedupePosts([
-      ...collected,
+    known = dedupePosts([
+      ...known,
       ...previous.allKnown.map((p) => normalizePost(p))
     ]);
   } else if (previous?.posts?.length) {
-    collected = dedupePosts([
-      ...collected,
-      ...previous.posts.map((p) => normalizePost(p))
-    ]);
+    known = dedupePosts([...known, ...previous.posts.map((p) => normalizePost(p))]);
   }
 
-  // If this run found nothing new and we have nothing at all, keep previous intact
-  if (!scrapeOk && previous?.posts?.length && !collected.length) {
-    const kept = {
-      ...previous,
+  // Scrape miss: do NOT resurrect old specials onto the homepage
+  if (!scrapeOk) {
+    const empty = {
       updatedAt: nowIso(),
       scrapedAt: nowIso(),
+      timezone: TZ,
+      localDate: localParts().key,
+      source: sources.join('+') || 'none',
+      found: false,
       scrapeOk: false,
       stale: true,
-      errors: [...errors, 'no-new-specials-kept-previous'].slice(0, 40)
+      post: null,
+      posts: [],
+      allKnown: known.slice(0, 40),
+      errors: [...errors, 'no-fresh-specials'].slice(0, 40)
     };
-    await env.DATA.put('special', JSON.stringify(kept));
-    return kept;
-  }
-
-  if (!scrapeOk && previous?.posts?.length && !fresh.length) {
-    // Prefer re-caching previous display images if possible
-    collected = dedupePosts([
-      ...previous.posts.map((p) => normalizePost(p)),
-      ...(previous.allKnown || []).map((p) => normalizePost(p))
-    ]);
+    await env.DATA.put('special', JSON.stringify(empty));
+    return empty;
   }
 
   // Cache images for display set (survives Facebook CDN expiry)
-  const displayDraft = selectDisplayPosts(collected);
+  const displayDraft = selectDisplayPosts(fresh);
   const cachedDisplay = [];
   for (const p of displayDraft) {
     cachedDisplay.push(await cacheImage(env, p));
   }
   const byId = new Map(cachedDisplay.map((p) => [p.id, p]));
-  collected = collected.map((p) => byId.get(p.id) || p);
+  known = known.map((p) => byId.get(p.id) || p);
 
   const payload = buildPayload({
-    posts: collected,
-    source: sources.join('+') || (scrapeOk ? 'mixed' : 'cache'),
+    posts: known,
+    source: sources.join('+') || 'mixed',
     errors,
     previous,
-    scrapeOk
+    scrapeOk: true
   });
   payload.posts = cachedDisplay.length ? cachedDisplay : payload.posts;
   payload.post = payload.posts[0] || null;
   payload.found = payload.posts.length > 0;
-  payload.stale = !scrapeOk;
+  payload.stale = false;
 
   await env.DATA.put('special', JSON.stringify(payload));
   return payload;

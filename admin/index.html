@@ -450,7 +450,8 @@
             <nav class="nav">
                 <button type="button" :class="tab === 'catalog' && source === 'takeout' && 'active'" @click="switchCatalog('takeout')">Takeout Menu</button>
                 <button type="button" :class="tab === 'catalog' && source === 'catering' && 'active'" @click="switchCatalog('catering')">Catering Menu</button>
-                <button type="button" :class="tab === 'submissions' && 'active'" @click="tab = 'submissions'; navOpen = false">
+                <button type="button" :class="tab === 'specials' && 'active'" @click="openSpecials()">Specials</button>
+                <button type="button" :class="tab === 'submissions' && 'active'" @click="openSubmissions()">
                     <span>Submissions</span>
                     <span class="pill" x-show="unreadCount > 0" x-text="unreadCount"></span>
                 </button>
@@ -563,6 +564,55 @@
                 </div>
             </template>
 
+            <!-- SPECIALS -->
+            <template x-if="tab === 'specials'">
+                <div>
+                    <div class="top">
+                        <div>
+                            <h1>Daily specials</h1>
+                            <p>Only posts from the last day are shown on the homepage. Older captions (e.g. April 21) are rejected.</p>
+                        </div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-ghost" @click="loadSpecials()" :disabled="specialsLoading">Refresh status</button>
+                            <button type="button" class="btn btn-accent" @click="forceFetchSpecials()" :disabled="specialsFetching" x-text="specialsFetching ? 'Fetching…' : 'Force fetch now'"></button>
+                        </div>
+                    </div>
+                    <div class="meta-grid" style="margin-bottom:1rem;">
+                        <div>
+                            <label class="label">Status</label>
+                            <div class="field" style="display:flex;align-items:center;background:#fafafa;" x-text="specialsStatusLabel"></div>
+                        </div>
+                        <div>
+                            <label class="label">Last scrape</label>
+                            <div class="field" style="display:flex;align-items:center;background:#fafafa;" x-text="specialsMeta.scrapedAt || specialsMeta.updatedAt || '—'"></div>
+                        </div>
+                        <div style="grid-column:1/-1">
+                            <label class="label">Source</label>
+                            <div class="field" style="display:flex;align-items:center;background:#fafafa;" x-text="specialsMeta.source || '—'"></div>
+                        </div>
+                    </div>
+                    <div class="list" x-show="specialsPosts.length">
+                        <template x-for="post in specialsPosts" :key="post.id || post.link">
+                            <div class="row">
+                                <div>
+                                    <div class="row-title" x-text="(post.title || 'Special').slice(0, 80)"></div>
+                                    <div class="row-meta">
+                                        <span x-text="post.published || 'no date'"></span>
+                                        <template x-if="post.source"><span> · <span x-text="post.source"></span></span></template>
+                                    </div>
+                                    <div class="row-meta" style="margin-top:0.35rem;white-space:pre-wrap;" x-text="(post.captionText || '').slice(0, 280)"></div>
+                                </div>
+                                <div class="row-actions">
+                                    <a class="btn btn-sm btn-ghost" :href="post.link" target="_blank" rel="noopener" x-show="post.link">Open</a>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="empty" x-show="!specialsPosts.length">No fresh special right now — homepage section is hidden.</div>
+                    <p style="margin-top:1rem;color:var(--muted);font-size:0.85rem;" x-show="specialsMeta.errors && specialsMeta.errors.length" x-text="'Notes: ' + (specialsMeta.errors || []).slice(0, 3).join(' · ')"></p>
+                </div>
+            </template>
+
             <!-- SUBMISSIONS -->
             <template x-if="tab === 'submissions'">
                 <div>
@@ -572,6 +622,7 @@
                             <p x-text="submissions.length + ' total · ' + unreadCount + ' unread'"></p>
                         </div>
                         <div class="actions">
+                            <button type="button" class="btn btn-ghost" @click="loadSubmissions()">Refresh</button>
                             <button type="button" class="btn btn-ghost" x-show="unreadCount > 0" @click="markAllRead()">Mark all read</button>
                         </div>
                     </div>
@@ -929,6 +980,10 @@ function admin() {
         submissions: [],
         activeSub: null,
         sSearch: '',
+        specialsMeta: {},
+        specialsPosts: [],
+        specialsLoading: false,
+        specialsFetching: false,
         confirmTitle: '',
         confirmMsg: '',
         confirmKind: '',
@@ -991,6 +1046,12 @@ function admin() {
                 );
             }
             return list;
+        },
+        get specialsStatusLabel() {
+            if (this.specialsMeta.found && this.specialsPosts.length) {
+                return this.specialsPosts.length + ' live on homepage';
+            }
+            return 'Hidden on homepage (no fresh special)';
         },
 
         itemsFor(cat) {
@@ -1141,6 +1202,69 @@ function admin() {
             }
             this.buildCateringQr();
             await this.loadData();
+            await this.loadSubmissions();
+            await this.loadSpecials();
+        },
+
+        async openSubmissions() {
+            this.tab = 'submissions';
+            this.navOpen = false;
+            await this.loadSubmissions();
+        },
+
+        async openSpecials() {
+            this.tab = 'specials';
+            this.navOpen = false;
+            await this.loadSpecials();
+        },
+
+        async loadSubmissions() {
+            try {
+                const sr = await this.api('/api/submissions');
+                if (sr.ok) {
+                    const d = await sr.json();
+                    this.submissions = Array.isArray(d.submissions) ? d.submissions : [];
+                } else {
+                    this.notify('Could not load submissions (' + sr.status + ').');
+                }
+            } catch (e) {
+                this.notify('Could not load submissions.');
+            }
+        },
+
+        async loadSpecials() {
+            this.specialsLoading = true;
+            try {
+                const res = await this.api('/api/specials?_=' + Date.now());
+                const data = await res.json();
+                this.specialsMeta = data || {};
+                this.specialsPosts = Array.isArray(data.posts) ? data.posts : data.post ? [data.post] : [];
+            } catch (e) {
+                this.notify('Could not load specials.');
+            } finally {
+                this.specialsLoading = false;
+            }
+        },
+
+        async forceFetchSpecials() {
+            this.specialsFetching = true;
+            try {
+                const res = await this.api('/api/specials/refresh?force=1', { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Fetch failed');
+                const s = data.specials || {};
+                this.specialsMeta = s;
+                this.specialsPosts = Array.isArray(s.posts) ? s.posts : s.post ? [s.post] : [];
+                if (s.found && this.specialsPosts.length) {
+                    this.notify('Fetched ' + this.specialsPosts.length + ' fresh special(s).');
+                } else {
+                    this.notify('No fresh special found — homepage section hidden.');
+                }
+            } catch (e) {
+                this.notify(e.message || 'Force fetch failed.');
+            } finally {
+                this.specialsFetching = false;
+            }
         },
 
         async switchCatalog(source) {
@@ -1228,15 +1352,6 @@ function admin() {
                 }
             } catch (e) {
                 this.notify('Could not load menu.');
-            }
-            try {
-                const sr = await this.api('/api/submissions');
-                if (sr.ok) {
-                    const d = await sr.json();
-                    this.submissions = d.submissions || [];
-                }
-            } catch (e) {
-                this.notify('Could not load submissions.');
             }
         },
 

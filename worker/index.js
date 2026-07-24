@@ -3,7 +3,7 @@
  * Static site via ASSETS + API/data via KV (DATA).
  */
 
-import { refreshSpecials, getSpecialMedia } from './specials.js';
+import { refreshSpecials, getSpecialMedia, publicSpecialsView, filterFreshPosts, resolvePublishedIso, isFreshSpecial } from './specials.js';
 import {
   validateCredentials,
   createSessionToken,
@@ -292,7 +292,8 @@ async function handleApi(request, env, pathname) {
   }
 
   if (pathname === '/api/specials' && method === 'GET') {
-    return json(await getJson(env, 'special', () => ({ posts: [], found: false })));
+    const raw = await getJson(env, 'special', () => ({ posts: [], found: false }));
+    return json(publicSpecialsView(raw));
   }
   if (pathname === '/api/specials' && method === 'POST') {
     const body = await request.json();
@@ -306,8 +307,8 @@ async function handleApi(request, env, pathname) {
   }
   if (pathname === '/api/specials/refresh' && method === 'POST') {
     const force = new URL(request.url).searchParams.get('force') === '1';
-    const result = await refreshSpecials(env, { force });
-    return json({ success: true, specials: result });
+    const result = await refreshSpecials(env, { force: force || true });
+    return json({ success: true, specials: publicSpecialsView(result) });
   }
   if (pathname === '/api/specials/ingest' && method === 'POST') {
     // Trusted push from GitHub Action / local curl bootstrap (caches images into KV)
@@ -319,7 +320,7 @@ async function handleApi(request, env, pathname) {
         : [];
     if (!incoming.length) return json({ error: 'No posts to ingest' }, 400);
 
-    // Dedupe by id
+    const scrapedAt = new Date().toISOString();
     const seenIds = new Set();
     const uniqueIncoming = [];
     for (const raw of incoming) {
@@ -338,7 +339,7 @@ async function handleApi(request, env, pathname) {
         network: raw.network || 'facebook',
         title: raw.title || '',
         link: raw.link || '',
-        published: raw.published || new Date().toISOString(),
+        published: raw.published || null,
         captionText: raw.captionText || raw.title || '',
         image: raw.image || null,
         imageRemote: raw.imageRemote || raw.image || null,
@@ -346,7 +347,9 @@ async function handleApi(request, env, pathname) {
         _imageBase64: raw._imageBase64 || null,
         _imageType: raw._imageType || null
       };
-      // Inline cache (same as specials.cacheImage)
+      post.published = resolvePublishedIso(post, /timeline|graph/i.test(post.source) ? scrapedAt : null);
+      if (!isFreshSpecial(post)) continue;
+
       if (post._imageBase64) {
         try {
           const bin = Uint8Array.from(atob(post._imageBase64), (c) => c.charCodeAt(0));
@@ -355,7 +358,7 @@ async function handleApi(request, env, pathname) {
               metadata: {
                 contentType: post._imageType || 'image/jpeg',
                 source: post.image || '',
-                cachedAt: new Date().toISOString()
+                cachedAt: scrapedAt
               }
             });
             post.image = `/api/specials/media/${encodeURIComponent(post.id)}`;
@@ -375,22 +378,23 @@ async function handleApi(request, env, pathname) {
     }
     for (const p of cached) allKnownMap.set(String(p.id), p);
 
+    const fresh = filterFreshPosts(cached);
     const payload = {
-      updatedAt: new Date().toISOString(),
-      scrapedAt: new Date().toISOString(),
+      updatedAt: scrapedAt,
+      scrapedAt,
       timezone: 'America/Denver',
       localDate: body.localDate || null,
       source: body.source || 'ingest',
-      found: true,
-      scrapeOk: true,
-      stale: false,
-      post: cached[0],
-      posts: cached,
+      found: fresh.length > 0,
+      scrapeOk: fresh.length > 0,
+      stale: fresh.length === 0,
+      post: fresh[0] || null,
+      posts: fresh,
       allKnown: [...allKnownMap.values()].slice(0, 40),
       errors: Array.isArray(body.errors) ? body.errors.slice(0, 20) : []
     };
     await putJson(env, 'special', payload);
-    return json({ success: true, specials: payload });
+    return json({ success: true, specials: publicSpecialsView(payload) });
   }
   if (pathname.startsWith('/api/specials/media/') && method === 'GET') {
     const id = decodeURIComponent(pathname.slice('/api/specials/media/'.length));
@@ -424,21 +428,21 @@ async function handleApi(request, env, pathname) {
     return json({ success: true, message: 'Submissions saved successfully' });
   }
 
-  const subMatch = pathname.match(/^\/api\/submissions\/(\d+)$/);
+  const subMatch = pathname.match(/^\/api\/submissions\/([^/]+)$/);
   if (subMatch && method === 'PATCH') {
-    const id = parseInt(subMatch[1], 10);
+    const idRaw = subMatch[1];
     const store = await getJson(env, 'submissions', () => ({ submissions: [] }));
-    const idx = store.submissions.findIndex((s) => s.id === id);
+    const idx = store.submissions.findIndex((s) => String(s.id) === String(idRaw));
     if (idx === -1) return json({ error: 'Submission not found' }, 404);
     const body = await request.json();
-    store.submissions[idx] = { ...store.submissions[idx], ...body };
+    store.submissions[idx] = { ...store.submissions[idx], ...body, id: store.submissions[idx].id };
     await putJson(env, 'submissions', store);
     return json({ success: true, submission: store.submissions[idx] });
   }
   if (subMatch && method === 'DELETE') {
-    const id = parseInt(subMatch[1], 10);
+    const idRaw = subMatch[1];
     const store = await getJson(env, 'submissions', () => ({ submissions: [] }));
-    store.submissions = store.submissions.filter((s) => s.id !== id);
+    store.submissions = store.submissions.filter((s) => String(s.id) !== String(idRaw));
     await putJson(env, 'submissions', store);
     return json({ success: true });
   }
@@ -453,7 +457,7 @@ async function handleApi(request, env, pathname) {
     const name = String(body.name || '').trim();
     const email = String(body.email || '').trim();
     const phone = String(body.phone || '').trim();
-    const subject = String(body.subject || '').trim() || 'General Inquiry';
+    const subject = String(body.subject || '').trim() || 'Website contact';
     const message = String(body.message || '').trim();
     if (!name || !email || !message) {
       return json({ error: 'Name, email, and message are required' }, 400);
@@ -465,6 +469,7 @@ async function handleApi(request, env, pathname) {
       return json({ error: 'Message is too long' }, 400);
     }
     const store = await getJson(env, 'submissions', () => ({ submissions: [] }));
+    if (!Array.isArray(store.submissions)) store.submissions = [];
     const newEntry = {
       id: Date.now(),
       name,
@@ -473,6 +478,7 @@ async function handleApi(request, env, pathname) {
       subject,
       message,
       date: new Date().toLocaleDateString('en-US', {
+        timeZone: 'America/Denver',
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -480,15 +486,15 @@ async function handleApi(request, env, pathname) {
       timestamp: new Date().toISOString(),
       read: false,
       stage: 'New Inquiry',
-      crmNote: ''
+      crmNote: '',
+      source: 'contact-form'
     };
     store.submissions.unshift(newEntry);
-    // Cap store size
     if (store.submissions.length > 2000) {
       store.submissions = store.submissions.slice(0, 2000);
     }
     await putJson(env, 'submissions', store);
-    return json({ success: true, message: 'Thank you! We will be in touch soon.' });
+    return json({ success: true, message: 'Thank you! We will be in touch soon.', id: newEntry.id });
   }
 
   if (pathname === '/api/upload' && method === 'POST') {

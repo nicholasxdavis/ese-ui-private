@@ -1,4 +1,3 @@
-# One Facebook share or post URL per line (curl + Open Graph; requires curl.exe on PATH).
-# Keywords required in caption/title: special, specials, or special of the day
+# One Facebook share or post URL per line (used by GitHub Action scrape).
+# Only add CURRENT special posts. Old URLs with past dates (e.g. "April 21") will be rejected.
 # Page: https://www.facebook.com/elsombreroexpress/
-https://www.facebook.com/share/p/14YXEbC1wLB/
