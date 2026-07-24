@@ -78,6 +78,54 @@ server.js                # Local Express only
 
 ---
 
+## Daily specials (critical)
+
+Production specials are **KV-backed** (`special` key) and never wiped on scrape failure.
+
+### How it works
+
+1. **GitHub Action hourly** (`Update special of the day`) runs `scripts/push-specials.mjs`  
+   - curl + Open Graph from Facebook share/post URLs (works from GitHub IPs)  
+   - downloads images  
+   - `POST /api/specials/ingest` → caches images in KV + updates payload  
+2. **Worker cron hourly** (`0 * * * *`) runs Browser Rendering + optional Graph API best-effort  
+3. Homepage `js/special.js` reads `/api/specials` and shows a carousel when multiple posts exist  
+
+### Adding / rotating Facebook posts
+
+Edit `facebook-post-urls.txt` (one share or post URL per line), commit, then either:
+
+```bash
+npm run specials:push
+```
+
+or wait for the hourly Action / run it from GitHub → Actions → workflow_dispatch.
+
+### Optional Graph API (most reliable long-term)
+
+```bash
+npx wrangler secret put FB_PAGE_ACCESS_TOKEN
+# optional:
+npx wrangler secret put FB_PAGE_ID
+```
+
+When set, the Worker cron prefers Graph API posts that match special keywords.
+
+### Manual pin (emergency)
+
+`POST /api/specials` with `{ "manual": true, "manualUntil": "<iso>", "posts": [...] }`  
+Cron will not overwrite until `manualUntil`.
+
+### Commands
+
+```bash
+npm run specials:push
+npm run smoke
+curl -X POST https://el-sombrero-express.nic-58f.workers.dev/api/specials/refresh
+```
+
+---
+
 ## Data model (KV)
 
 All production writes go to KV binding `DATA`:
@@ -85,7 +133,9 @@ All production writes go to KV binding `DATA`:
 | Key | Contents |
 |-----|----------|
 | `content` | Full `content.json` (includes `menu`, `cateringMenu`, `links`, wording) |
-| `special` | Special-of-the-day JSON |
+| `special` | Special-of-the-day JSON (display + history) |
+| `special-seed-urls` | Extra Facebook URLs to scrape |
+| `special-img:<id>` | Cached special images (`/api/specials/media/<id>`) |
 | `submissions` | `{ submissions: [...] }` contact/CRM entries |
 | `menu.pdf` | Binary takeout menu PDF (admin publish) |
 | `catering.pdf` | Binary catering menu PDF (admin publish) |
@@ -112,7 +162,11 @@ Same paths as local Express:
 | GET/POST | `/api/catering-menu` | Catering catalog (`content.cateringMenu`) |
 | GET/POST | `/api/menu-pdf` | Meta / multipart field `pdf` publish |
 | GET/POST | `/api/catering-menu-pdf` | Same for catering |
-| GET/POST | `/api/specials` | Special of the day |
+| GET/POST | `/api/specials` | Special of the day (GET public; POST can pin) |
+| POST | `/api/specials/refresh` | Trigger Worker scrape (browser/graph) |
+| POST | `/api/specials/ingest` | Push scraped posts + cache images (Action/local) |
+| GET | `/api/specials/media/:id` | Cached special image |
+| GET/POST | `/api/specials/seed-urls` | Facebook URLs watchlist |
 | GET/POST | `/api/submissions` | CRM store |
 | PATCH/DELETE | `/api/submissions/:id` | Single submission |
 | POST | `/api/contact` | Public contact form |

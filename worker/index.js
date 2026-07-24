@@ -3,6 +3,8 @@
  * Static site via ASSETS + API/data via KV (DATA).
  */
 
+import { refreshSpecials, getSpecialMedia } from './specials.js';
+
 const JSON_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
   'Cache-Control': 'no-store'
@@ -235,12 +237,116 @@ async function handleApi(request, env, pathname) {
   }
 
   if (pathname === '/api/specials' && method === 'GET') {
-    return json(await getJson(env, 'special', () => ({ posts: [] })));
+    return json(await getJson(env, 'special', () => ({ posts: [], found: false })));
   }
   if (pathname === '/api/specials' && method === 'POST') {
     const body = await request.json();
-    await putJson(env, 'special', body);
+    // Allow manual pin: { manual: true, manualUntil, posts: [...] }
+    await putJson(env, 'special', {
+      ...body,
+      updatedAt: new Date().toISOString(),
+      scrapedAt: new Date().toISOString()
+    });
     return json({ success: true, message: 'Specials saved successfully' });
+  }
+  if (pathname === '/api/specials/refresh' && method === 'POST') {
+    const force = new URL(request.url).searchParams.get('force') === '1';
+    const result = await refreshSpecials(env, { force });
+    return json({ success: true, specials: result });
+  }
+  if (pathname === '/api/specials/ingest' && method === 'POST') {
+    // Trusted push from GitHub Action / local curl bootstrap (caches images into KV)
+    const body = await request.json();
+    const incoming = Array.isArray(body.posts)
+      ? body.posts
+      : body.post
+        ? [body.post]
+        : [];
+    if (!incoming.length) return json({ error: 'No posts to ingest' }, 400);
+
+    const previous = (await env.DATA.get('special', 'json')) || {};
+    const cached = [];
+    for (const raw of incoming) {
+      const post = {
+        id: String(raw.id || Date.now()),
+        network: raw.network || 'facebook',
+        title: raw.title || '',
+        link: raw.link || '',
+        published: raw.published || new Date().toISOString(),
+        captionText: raw.captionText || raw.title || '',
+        image: raw.image || null,
+        imageRemote: raw.imageRemote || raw.image || null,
+        source: raw.source || 'ingest',
+        _imageBase64: raw._imageBase64 || null,
+        _imageType: raw._imageType || null
+      };
+      // Inline cache (same as specials.cacheImage)
+      if (post._imageBase64) {
+        try {
+          const bin = Uint8Array.from(atob(post._imageBase64), (c) => c.charCodeAt(0));
+          if (bin.byteLength && bin.byteLength <= 4 * 1024 * 1024) {
+            await env.DATA.put(`special-img:${post.id}`, bin, {
+              metadata: {
+                contentType: post._imageType || 'image/jpeg',
+                source: post.image || '',
+                cachedAt: new Date().toISOString()
+              }
+            });
+            post.image = `/api/specials/media/${encodeURIComponent(post.id)}`;
+          }
+        } catch {
+          /* keep remote */
+        }
+      }
+      delete post._imageBase64;
+      delete post._imageType;
+      cached.push(post);
+    }
+
+    const allKnownMap = new Map();
+    for (const p of previous.allKnown || previous.posts || []) {
+      if (p && p.id) allKnownMap.set(String(p.id), p);
+    }
+    for (const p of cached) allKnownMap.set(String(p.id), p);
+
+    const payload = {
+      updatedAt: new Date().toISOString(),
+      scrapedAt: new Date().toISOString(),
+      timezone: 'America/Denver',
+      localDate: body.localDate || null,
+      source: body.source || 'ingest',
+      found: true,
+      scrapeOk: true,
+      stale: false,
+      post: cached[0],
+      posts: cached,
+      allKnown: [...allKnownMap.values()].slice(0, 40),
+      errors: Array.isArray(body.errors) ? body.errors.slice(0, 20) : []
+    };
+    await putJson(env, 'special', payload);
+    return json({ success: true, specials: payload });
+  }
+  if (pathname.startsWith('/api/specials/media/') && method === 'GET') {
+    const id = decodeURIComponent(pathname.slice('/api/specials/media/'.length));
+    if (!id || id.includes('..')) return json({ error: 'Not found' }, 404);
+    const media = await getSpecialMedia(env, id);
+    if (!media) return json({ error: 'Not found' }, 404);
+    return new Response(media.body, {
+      headers: {
+        'Content-Type': media.contentType,
+        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
+      }
+    });
+  }
+  if (pathname === '/api/specials/seed-urls' && method === 'GET') {
+    const urls = (await env.DATA.get('special-seed-urls', 'json')) || [];
+    return json({ urls: Array.isArray(urls) ? urls : urls.urls || [] });
+  }
+  if (pathname === '/api/specials/seed-urls' && method === 'POST') {
+    const body = await request.json();
+    const urls = Array.isArray(body) ? body : body.urls || [];
+    await env.DATA.put('special-seed-urls', JSON.stringify(urls));
+    return json({ success: true, urls });
   }
 
   if (pathname === '/api/submissions' && method === 'GET') {
@@ -384,6 +490,14 @@ function noStoreHtml(res) {
 }
 
 export default {
+  async scheduled(_controller, env, ctx) {
+    ctx.waitUntil(
+      refreshSpecials(env).catch((err) => {
+        console.error('specials cron failed', err);
+      })
+    );
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url);
     const pathname = url.pathname;

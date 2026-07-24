@@ -3,8 +3,17 @@
   "name": "el-sombrero-express",
   "main": "worker/index.js",
   "compatibility_date": "2026-07-24",
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "preview_urls": true,
+  "browser": {
+    "binding": "BROWSER"
+  },
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  },
   "assets": {
     "directory": "./site",
     "binding": "ASSETS",

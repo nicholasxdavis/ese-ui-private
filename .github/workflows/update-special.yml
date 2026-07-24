@@ -1,13 +1,10 @@
-# Scheduled refresh of special.json + sync to Cloudflare KV.
-# Repo Variables (optional): RSSHUB_BASE, FACEBOOK_PAGE_ID, INSTAGRAM_USERNAME, SPECIAL_TZ
-# Repo Secrets (required for KV sync): CLOUDFLARE_API_TOKEN
-#   Token needs Workers KV Storage Edit on this account.
+# Refresh daily specials from Facebook (OG via curl) and push into Cloudflare KV.
 
 name: Update special of the day
 
 on:
   schedule:
-    - cron: "15 */4 * * *"
+    - cron: "5 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -16,9 +13,6 @@ permissions:
 concurrency:
   group: update-special-of-the-day
   cancel-in-progress: true
-
-env:
-  KV_NAMESPACE_ID: 0df6e94205c146ad84a2448345417efa
 
 jobs:
   refresh:
@@ -29,45 +23,32 @@ jobs:
         with:
           persist-credentials: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Build special.json
+      - name: Scrape Facebook OG + push to Worker KV
         env:
-          RSSHUB_BASE: ${{ vars.RSSHUB_BASE }}
-          FACEBOOK_PAGE_ID: ${{ vars.FACEBOOK_PAGE_ID }}
-          INSTAGRAM_USERNAME: ${{ vars.INSTAGRAM_USERNAME }}
-          SPECIAL_TZ: ${{ vars.SPECIAL_TZ }}
-        run: python scripts/update_special.py
-
-      - name: Commit and push if changed
-        id: commit
+          WORKER_BASE: ${{ vars.WORKER_BASE }}
         run: |
+          BASE="${WORKER_BASE:-https://el-sombrero-express.nic-58f.workers.dev}"
+          echo "Pushing specials to $BASE"
+          node scripts/push-specials.mjs "$BASE"
+
+      - name: Archive special.json in git (best-effort)
+        continue-on-error: true
+        env:
+          FACEBOOK_PAGE_ID: ${{ vars.FACEBOOK_PAGE_ID }}
+          SPECIAL_TZ: ${{ vars.SPECIAL_TZ }}
+        run: |
+          python3 scripts/update_special.py || true
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add special.json
+          git add special.json || true
           if git diff --staged --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No changes to commit."
+            echo "No special.json changes."
           else
-            git commit -m "chore: update special.json [skip ci]"
-            git push
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git commit -m "chore: update special.json archive [skip ci]" || true
+            git push || true
           fi
-
-      - name: Sync special.json to Cloudflare KV
-        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          npx wrangler@latest kv key put special \
-            --namespace-id "$KV_NAMESPACE_ID" \
-            --path special.json \
-            --remote

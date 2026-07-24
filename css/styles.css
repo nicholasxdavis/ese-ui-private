@@ -864,6 +864,10 @@ body {
     margin: 0;
     width: 100%;
     justify-self: end;
+    position: relative;
+}
+.special-list-wrap.has-multiple {
+    padding: 0 2.5rem;
 }
 .special-list {
     display: flex;
@@ -871,6 +875,54 @@ body {
     gap: 1.25rem;
     justify-content: flex-end;
     margin: 0;
+}
+.special-nav {
+    position: absolute;
+    top: 42%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: 2.35rem;
+    height: 2.35rem;
+    border: 2px solid #1a1a1a;
+    border-radius: 999px;
+    background: #fff7e8;
+    color: #1a1a1a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 #000;
+    padding: 0;
+}
+.special-nav:hover {
+    background: #ffffff;
+}
+.special-nav:active {
+    transform: translateY(-50%) translate(1px, 1px);
+    box-shadow: 1px 1px 0 #000;
+}
+.special-nav--prev { left: 0; }
+.special-nav--next { right: 0; }
+.special-nav[hidden] { display: none !important; }
+.special-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.45rem;
+    margin-top: 0.85rem;
+    width: 100%;
+}
+.special-dots[hidden] { display: none !important; }
+.special-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    border: 1.5px solid #1a1a1a;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+}
+.special-dot.is-active {
+    background: #1a1a1a;
 }
 .special-card-wrap {
     position: relative;
@@ -962,6 +1014,9 @@ body {
     .special-list-wrap {
         justify-self: center;
         max-width: 420px;
+    }
+    .special-list-wrap.has-multiple {
+        padding: 0 2.1rem;
     }
     .special-list {
         justify-content: center;

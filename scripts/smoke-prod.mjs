@@ -54,7 +54,16 @@ results.push(
 
 results.push(
   await check('GET /api/specials', async () => {
-    await mustOk('/api/specials');
+    const data = await (await mustOk('/api/specials')).json();
+    if (!data.found && !(data.posts && data.posts.length)) {
+      throw new Error('no specials payload');
+    }
+    const post = (data.posts && data.posts[0]) || data.post;
+    if (!post) throw new Error('missing post');
+    if (post.image && String(post.image).startsWith('/api/specials/media/')) {
+      const media = await fetch(base + post.image);
+      if (!media.ok) throw new Error('special media ' + media.status);
+    }
   })
 );
 
