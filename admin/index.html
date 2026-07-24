@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Admin | El Sombrero Express</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg: #f4f4f5;
+            --surface: #fff;
+            --ink: #18181b;
+            --muted: #71717a;
+            --line: #e4e4e7;
+            --line-strong: #d4d4d8;
+            --red: #dc2626;
+            --green: #16a34a;
+            --green-bg: #dcfce7;
+            --red-bg: #fee2e2;
+            --amber: #a16207;
+            --amber-bg: #fef9c3;
+            --sidebar: #18181b;
+            --accent: #2563eb;
+            --accent-soft: #eff6ff;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'IBM Plex Sans', system-ui, sans-serif;
+            font-size: 14px;
+            color: var(--ink);
+            background: var(--bg);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        button, input, select, textarea {
+            font: inherit; color: inherit; border: none; background: none; outline: none;
+        }
+        button { cursor: pointer; }
+        .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+        .sidebar {
+            background: var(--sidebar); color: #fafafa;
+            padding: 1.5rem 0.85rem; display: flex; flex-direction: column; gap: 1.75rem;
+        }
+        .brand { padding: 0 0.65rem; }
+        .brand strong { display: block; font-size: 0.95rem; font-weight: 600; }
+        .brand span { display: block; margin-top: 0.2rem; font-size: 0.75rem; color: #a1a1aa; }
+        .nav { display: flex; flex-direction: column; gap: 0.25rem; }
+        .nav button {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 0.65rem 0.75rem; border-radius: 6px;
+            color: #a1a1aa; text-align: left; font-weight: 500;
+        }
+        .nav button:hover { background: rgba(255,255,255,0.06); color: #fff; }
+        .nav button.active { background: #27272a; color: #fff; }
+        .pill {
+            min-width: 1.2rem; height: 1.2rem; padding: 0 0.3rem; border-radius: 999px;
+            background: var(--accent); color: #fff; font-size: 0.68rem; font-weight: 700;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .main { padding: 1.5rem 1.75rem 3rem; max-width: 1200px; }
+        .top {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            gap: 1rem; margin-bottom: 1.15rem; flex-wrap: wrap;
+        }
+        .top h1 { font-size: 1.3rem; font-weight: 650; letter-spacing: -0.02em; }
+        .top p { color: var(--muted); margin-top: 0.2rem; font-size: 0.875rem; }
+        .actions { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+        .btn {
+            height: 34px; padding: 0 0.85rem; border-radius: 6px; font-weight: 550;
+            font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 0.35rem;
+            white-space: nowrap; text-decoration: none; border: 1px solid transparent;
+        }
+        .btn-primary { background: var(--ink); color: #fff; }
+        .btn-primary:hover { background: #000; }
+        .btn-accent { background: var(--accent); color: #fff; }
+        .btn-accent:hover { background: #1d4ed8; }
+        .btn-ghost { background: var(--surface); border-color: var(--line-strong); }
+        .btn-ghost:hover { background: #fafafa; }
+        .btn-danger { background: var(--surface); color: var(--red); border-color: #fecaca; }
+        .btn-danger:hover { background: var(--red-bg); }
+        .btn-sm { height: 30px; padding: 0 0.65rem; font-size: 0.75rem; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .capacity {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 0.9rem;
+        }
+        .capacity.over { border-color: #fecaca; background: #fff7f7; }
+        .capacity-bar {
+            height: 6px;
+            background: #e4e4e7;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 0.45rem;
+        }
+        .capacity-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 999px;
+            transition: width 0.2s;
+        }
+        .capacity.over .capacity-fill { background: var(--red); }
+        .capacity-text {
+            font-size: 0.8rem;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+        .char-count {
+            font-size: 0.7rem;
+            color: var(--muted);
+            margin-top: 0.2rem;
+            text-align: right;
+        }
+        .char-count.over { color: var(--red); font-weight: 600; }
+        .toolbar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.85rem; }
+        .field, .search, .select {
+            height: 34px; padding: 0 0.75rem; background: var(--surface);
+            border: 1px solid var(--line-strong); border-radius: 6px; width: 100%;
+        }
+        textarea.field { height: auto; min-height: 72px; padding: 0.55rem 0.75rem; resize: vertical; }
+        .search { max-width: 240px; }
+        .select { max-width: 200px; }
+        .field:focus, .search:focus, .select:focus, textarea.field:focus {
+            border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+        }
+        .label {
+            display: block; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.3rem;
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+        .list { display: flex; flex-direction: column; gap: 0.45rem; }
+        .row {
+            background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+            padding: 0.8rem 0.95rem; display: grid; grid-template-columns: 1fr auto;
+            gap: 0.65rem 1rem; align-items: center;
+        }
+        .row.unread { border-color: #bfdbfe; background: linear-gradient(90deg, var(--accent-soft) 0, #fff 12px); }
+        .row.inactive { opacity: 0.55; }
+        .row-title { font-weight: 600; }
+        .row-meta { color: var(--muted); font-size: 0.8rem; margin-top: 0.15rem; }
+        .row-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; justify-content: flex-end; }
+        .badge {
+            display: inline-flex; align-items: center; padding: 0.1rem 0.4rem; border-radius: 4px;
+            font-size: 0.68rem; font-weight: 650; text-transform: uppercase;
+        }
+        .badge-green { background: var(--green-bg); color: var(--green); }
+        .badge-red { background: var(--red-bg); color: var(--red); }
+        .badge-amber { background: var(--amber-bg); color: var(--amber); }
+        .empty {
+            text-align: center; padding: 2.5rem 1rem; color: var(--muted);
+            background: var(--surface); border: 1px dashed var(--line-strong); border-radius: 8px;
+        }
+        .overlay {
+            position: fixed; inset: 0; background: rgba(24,24,27,0.45);
+            display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50;
+        }
+        .modal {
+            background: var(--surface); border-radius: 10px; width: min(560px, 100%);
+            max-height: min(92vh, 760px); overflow: auto; border: 1px solid var(--line);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+        }
+        .modal.wide { width: min(920px, 100%); }
+        .modal-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.9rem 1.05rem; border-bottom: 1px solid var(--line);
+            position: sticky; top: 0; background: var(--surface); z-index: 1;
+        }
+        .modal-head h2 { font-size: 0.95rem; font-weight: 650; }
+        .modal-body { padding: 1.05rem; display: flex; flex-direction: column; gap: 0.8rem; }
+        .modal-foot {
+            display: flex; justify-content: flex-end; gap: 0.45rem;
+            padding: 0.85rem 1.05rem; border-top: 1px solid var(--line);
+            position: sticky; bottom: 0; background: var(--surface);
+        }
+        .detail-grid { display: grid; gap: 0.7rem; }
+        .detail-grid dt {
+            font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.15rem;
+        }
+        .message-box {
+            background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+            padding: 0.8rem; white-space: pre-wrap; line-height: 1.5;
+        }
+        .toasts {
+            position: fixed; right: 1rem; bottom: 1rem; display: flex;
+            flex-direction: column; gap: 0.45rem; z-index: 100;
+        }
+        .toast {
+            background: var(--ink); color: #fff; padding: 0.65rem 0.95rem;
+            border-radius: 6px; font-size: 0.8125rem; font-weight: 500;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+        }
+        .mobile-bar {
+            display: none; position: sticky; top: 0; z-index: 20;
+            background: var(--sidebar); color: #fff; padding: 0.7rem 1rem;
+            align-items: center; justify-content: space-between;
+        }
+        .cats {
+            display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.85rem;
+        }
+        .cat-chip {
+            height: 30px; padding: 0 0.7rem; border-radius: 999px;
+            border: 1px solid var(--line-strong); background: #fff; font-size: 0.75rem; font-weight: 550;
+        }
+        .cat-chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .meta-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem;
+            background: #fff; border: 1px solid var(--line); border-radius: 8px;
+            padding: 0.9rem; margin-bottom: 0.9rem;
+        }
+        [x-cloak] { display: none !important; }
+
+        /* ── Printable menu: 2 letter pages @ 96dpi ── */
+        #menu-print-host {
+            position: fixed;
+            left: 0;
+            top: 0;
+            transform: translate(-120vw, 0);
+            pointer-events: none;
+            z-index: -1;
+        }
+        #menu-print {
+            color: #1a1a1a;
+            font-family: 'Libre Baskerville', Georgia, serif;
+        }
+        #menu-print .mp-page {
+            width: 816px;
+            height: 1056px;
+            box-sizing: border-box;
+            padding: 32px 42px 28px;
+            background: #fffaf3;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        #menu-print .mp-body {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #menu-print .mp-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+            align-items: stretch;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+        }
+        #menu-print .mp-col {
+            min-width: 0;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 9px;
+        }
+        #menu-print .mp-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            align-items: start;
+            text-align: left;
+            border-bottom: 2px solid #1a1a1a;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            flex: 0 0 auto;
+        }
+        #menu-print .mp-header.no-qr {
+            grid-template-columns: 1fr;
+        }
+        #menu-print .mp-brand {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            line-height: 1.05;
+        }
+        #menu-print .mp-sub {
+            margin-top: 3px;
+            font-size: 8px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        #menu-print .mp-contact {
+            margin-top: 2px;
+            font-size: 8px;
+            line-height: 1.3;
+        }
+        #menu-print .mp-header-qr {
+            text-align: center;
+            flex-shrink: 0;
+            padding-top: 2px;
+            margin-right: 4px;
+        }
+        #menu-print .mp-header-qr img {
+            width: 70px;
+            height: 70px;
+            display: block;
+            background: #fff;
+            border: none;
+            padding: 0;
+            box-sizing: border-box;
+            object-fit: contain;
+        }
+        #menu-print .mp-header-qr span {
+            display: block;
+            margin-top: 3px;
+            font-size: 7px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        #menu-print .mp-cat {
+            flex: 0 1 auto;
+            margin-bottom: 0;
+        }
+        #menu-print .mp-cat-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 1.5px solid #1a1a1a;
+            padding-bottom: 3px;
+            margin-bottom: 7px;
+        }
+        #menu-print .mp-item {
+            margin-bottom: 6px;
+        }
+        #menu-print .mp-item-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            column-gap: 8px;
+            align-items: start;
+            font-size: 10.5px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        #menu-print .mp-name-wrap {
+            position: relative;
+            min-width: 0;
+            overflow: hidden;
+            padding-right: 2px;
+        }
+        #menu-print .mp-name-wrap::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0.15em;
+            border-bottom: 1px dotted #777;
+            z-index: 0;
+        }
+        #menu-print .mp-name {
+            position: relative;
+            z-index: 1;
+            display: inline;
+            background: #fffaf3;
+            padding-right: 4px;
+        }
+        #menu-print .mp-price-block {
+            text-align: right;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+        #menu-print .mp-price {
+            display: block;
+        }
+        #menu-print .mp-price2 {
+            display: block;
+            font-size: 7.5px;
+            font-weight: 700;
+            margin-top: 1px;
+            color: #333;
+        }
+        #menu-print .mp-desc {
+            font-size: 7.8px;
+            line-height: 1.28;
+            margin-top: 1px;
+            color: #333;
+            font-weight: 400;
+        }
+        #menu-print .mp-addons {
+            font-size: 7.2px;
+            color: #555;
+            margin-top: 1px;
+            font-style: italic;
+            line-height: 1.22;
+        }
+        /* Compact chips / sides grid — align to main column edges */
+        #menu-print .mp-compact {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 12px;
+            row-gap: 3px;
+        }
+        #menu-print .mp-compact-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 5px;
+            font-size: 8.5px;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+        #menu-print .mp-compact-row .mp-name-wrap::after {
+            bottom: 0.1em;
+        }
+
+        @media (max-width: 800px) {
+            .shell { grid-template-columns: 1fr; }
+            .sidebar {
+                display: none; position: fixed; inset: 0 auto 0 0; width: 240px; z-index: 40;
+            }
+            .sidebar.open { display: flex; }
+            .mobile-bar { display: flex; }
+            .main { padding: 1.1rem 1rem 2.5rem; }
+            .row, .meta-grid, .grid-2 { grid-template-columns: 1fr; }
+            .row-actions { justify-content: flex-start; }
+            .search, .select { max-width: none; flex: 1; }
+        }
+    </style>
+</head>
+<body>
+<div x-data="admin()" x-init="init()">
+    <div class="mobile-bar">
+        <strong>El Sombrero Admin</strong>
+        <button type="button" class="btn btn-sm btn-ghost" style="color:#fff;border-color:#3f3f46;background:transparent;" @click="navOpen = !navOpen">Menu</button>
+    </div>
+
+    <div class="shell">
+        <aside class="sidebar" :class="navOpen && 'open'">
+            <div class="brand">
+                <strong>El Sombrero Express</strong>
+                <span>Admin</span>
+            </div>
+            <nav class="nav">
+                <button type="button" :class="tab === 'catalog' && source === 'takeout' && 'active'" @click="switchCatalog('takeout')">Takeout Menu</button>
+                <button type="button" :class="tab === 'catalog' && source === 'catering' && 'active'" @click="switchCatalog('catering')">Catering Menu</button>
+                <button type="button" :class="tab === 'submissions' && 'active'" @click="tab = 'submissions'; navOpen = false">
+                    <span>Submissions</span>
+                    <span class="pill" x-show="unreadCount > 0" x-text="unreadCount"></span>
+                </button>
+            </nav>
+        </aside>
+
+        <main class="main">
+            <!-- CATALOG (takeout or catering) -->
+            <template x-if="tab === 'catalog'">
+                <div>
+                    <div class="top">
+                        <div>
+                            <h1 x-text="source === 'catering' ? 'Catering Menu' : 'Takeout Menu'"></h1>
+                            <p>
+                                <span x-text="printCount + ' / ' + limits.maxItems + ' on printed PDF'"></span>
+                                <span> · </span>
+                                <span x-text="items.length + ' total in catalog'"></span>
+                            </p>
+                        </div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-ghost" @click="openAddItem()">Add item</button>
+                            <button type="button" class="btn btn-ghost" x-show="dirty" @click="discard()">Discard</button>
+                            <button type="button" class="btn btn-primary" x-show="dirty" @click="saveMenu()">Save</button>
+                            <button type="button" class="btn btn-accent" :disabled="generating || printCount < 1" @click="generateAndPublish()" x-text="generating ? 'Generating...' : 'Generate & publish PDF'"></button>
+                        </div>
+                    </div>
+
+                    <div class="capacity" :class="printCount > limits.maxItems && 'over'">
+                        <div class="capacity-bar"><div class="capacity-fill" :style="'width:' + Math.min(100, Math.round(printCount / limits.maxItems * 100)) + '%'"></div></div>
+                        <div class="capacity-text">
+                            Printed menu budget: <strong x-text="printCount + ' / ' + limits.maxItems"></strong> items.
+                            Descriptions max <strong x-text="limits.maxDescription"></strong> chars.
+                            Only items marked <strong>On PDF</strong> are published.
+                            <template x-if="source === 'takeout'">
+                                <span> Layout <strong x-text="'v' + layoutVersion"></strong> (Quesadillas on page 2).</span>
+                            </template>
+                            <template x-if="source === 'catering'">
+                                <span> Catering catalog → <strong>catering.pdf</strong>.</span>
+                            </template>
+                            <span x-show="printCount > limits.maxItems" style="color:var(--red);"> Over limit — turn some off before publishing.</span>
+                        </div>
+                    </div>
+
+                    <div class="unsaved" x-show="dirty">
+                        <span>Unsaved menu changes.</span>
+                        <div class="actions">
+                            <button type="button" class="btn btn-sm btn-ghost" @click="discard()">Discard</button>
+                            <button type="button" class="btn btn-sm btn-primary" @click="saveMenu()">Save</button>
+                        </div>
+                    </div>
+
+                    <div class="meta-grid">
+                        <div>
+                            <label class="label">Phone</label>
+                            <input class="field" x-model="meta.phone" @input="dirty = true">
+                        </div>
+                        <div>
+                            <label class="label">Website</label>
+                            <input class="field" x-model="meta.website" @input="dirty = true">
+                        </div>
+                        <div style="grid-column: 1 / -1">
+                            <label class="label">Address</label>
+                            <input class="field" x-model="meta.address" @input="dirty = true">
+                        </div>
+                    </div>
+
+                    <div class="cats">
+                        <button type="button" class="cat-chip" :class="!catFilter && 'active'" @click="catFilter = ''">All</button>
+                        <template x-for="c in categories" :key="c">
+                            <button type="button" class="cat-chip" :class="catFilter === c && 'active'" @click="catFilter = c" x-text="c"></button>
+                        </template>
+                    </div>
+
+                    <div class="toolbar">
+                        <input class="search" type="search" placeholder="Search items..." x-model="mSearch">
+                        <select class="select" x-model="statusFilter">
+                            <option value="">All items</option>
+                            <option value="active">On PDF only</option>
+                            <option value="hidden">Off PDF only</option>
+                        </select>
+                    </div>
+
+                    <div class="list" x-show="filteredItems.length">
+                        <template x-for="item in filteredItems" :key="item.id">
+                            <div class="row" :class="!item.active && 'inactive'">
+                                <div>
+                                    <div class="row-title">
+                                        <span x-text="item.name"></span>
+                                        <span class="badge" :class="item.active ? 'badge-green' : 'badge-red'" style="margin-left:0.35rem;" x-text="item.active ? 'On PDF' : 'Off PDF'"></span>
+                                    </div>
+                                    <div class="row-meta">
+                                        <span x-text="item.category"></span>
+                                        <template x-if="item.price"><span> · $<span x-text="item.price"></span></span></template>
+                                        <template x-if="item.price2"><span> · <span x-text="item.price2Label || 'Alt'"></span> $<span x-text="item.price2"></span></span></template>
+                                        <template x-if="item.description"><span> · <span x-text="clip(item.description, 70)"></span></span></template>
+                                    </div>
+                                </div>
+                                <div class="row-actions">
+                                    <button type="button" class="btn btn-sm btn-ghost" @click="toggleItem(item)" x-text="item.active ? 'Remove from PDF' : 'Add to PDF'"></button>
+                                    <button type="button" class="btn btn-sm btn-ghost" @click="openEditItem(item)">Edit</button>
+                                    <button type="button" class="btn btn-sm btn-danger" @click="confirmDelItem(item)">Delete</button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="empty" x-show="!filteredItems.length">No items match.</div>
+                </div>
+            </template>
+
+            <!-- SUBMISSIONS -->
+            <template x-if="tab === 'submissions'">
+                <div>
+                    <div class="top">
+                        <div>
+                            <h1>Submissions</h1>
+                            <p x-text="submissions.length + ' total · ' + unreadCount + ' unread'"></p>
+                        </div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-ghost" x-show="unreadCount > 0" @click="markAllRead()">Mark all read</button>
+                        </div>
+                    </div>
+                    <div class="toolbar">
+                        <input class="search" type="search" placeholder="Search submissions..." x-model="sSearch">
+                    </div>
+                    <div class="list" x-show="filteredSubmissions.length">
+                        <template x-for="sub in filteredSubmissions" :key="sub.id">
+                            <div class="row" :class="!sub.read && 'unread'">
+                                <div>
+                                    <div class="row-title">
+                                        <span x-text="sub.subject"></span>
+                                        <span class="badge badge-amber" x-show="!sub.read" style="margin-left:0.35rem;">New</span>
+                                    </div>
+                                    <div class="row-meta">
+                                        <span x-text="sub.name"></span> · <span x-text="sub.date"></span>
+                                        <template x-if="sub.email"><span> · <span x-text="sub.email"></span></span></template>
+                                    </div>
+                                </div>
+                                <div class="row-actions">
+                                    <button type="button" class="btn btn-sm btn-ghost" @click="openSub(sub)">View</button>
+                                    <button type="button" class="btn btn-sm btn-danger" @click="confirmDelSub(sub)">Delete</button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="empty" x-show="!filteredSubmissions.length">No submissions yet.</div>
+                </div>
+            </template>
+        </main>
+    </div>
+
+    <!-- Item modal -->
+    <div class="overlay" x-show="modal === 'item'" x-cloak @click.self="modal = null">
+        <div class="modal" role="dialog">
+            <div class="modal-head">
+                <h2 x-text="editItem.id ? 'Edit item' : 'Add item'"></h2>
+                <button type="button" class="btn btn-sm btn-ghost" @click="modal = null">Close</button>
+            </div>
+            <form @submit.prevent="saveItem()">
+                <div class="modal-body">
+                    <div>
+                        <label class="label">Name</label>
+                        <input class="field" required x-model="editItem.name" :maxlength="limits.maxName">
+                        <div class="char-count" :class="(editItem.name||'').length >= limits.maxName && 'over'" x-text="(editItem.name||'').length + ' / ' + limits.maxName"></div>
+                    </div>
+                    <div class="grid-2">
+                        <div>
+                            <label class="label">Category</label>
+                            <select class="field" required x-model="editItem.category">
+                                <template x-for="c in categories" :key="c">
+                                    <option :value="c" x-text="c"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label">Price</label>
+                            <input class="field" x-model="editItem.price" placeholder="6.95">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div>
+                            <label class="label">Alt price label</label>
+                            <input class="field" x-model="editItem.price2Label" placeholder="Plate / For Two / Flour">
+                        </div>
+                        <div>
+                            <label class="label">Alt price</label>
+                            <input class="field" x-model="editItem.price2" placeholder="8.75">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="label">Description</label>
+                        <textarea class="field" rows="3" x-model="editItem.description" :maxlength="limits.maxDescription"></textarea>
+                        <div class="char-count" :class="(editItem.description||'').length >= limits.maxDescription && 'over'" x-text="(editItem.description||'').length + ' / ' + limits.maxDescription"></div>
+                    </div>
+                    <div>
+                        <label class="label">Add-ons / notes</label>
+                        <input class="field" x-model="editItem.addons" placeholder="Add beans & rice 2.25" :maxlength="limits.maxAddons">
+                        <div class="char-count" :class="(editItem.addons||'').length >= limits.maxAddons && 'over'" x-text="(editItem.addons||'').length + ' / ' + limits.maxAddons"></div>
+                    </div>
+                    <label style="display:flex;align-items:center;gap:0.5rem;font-weight:500;">
+                        <input type="checkbox" x-model="editItem.active" @change="guardPrintToggle($event)">
+                        Include on printed PDF
+                    </label>
+                    <p style="font-size:0.75rem;color:var(--muted);margin-top:-0.35rem;">Keep the PDF lean. Catalog items can stay saved but off the PDF.</p>
+                </div>
+                <div class="modal-foot">
+                    <button type="button" class="btn btn-ghost" @click="modal = null">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Submission modal -->
+    <div class="overlay" x-show="modal === 'sub'" x-cloak @click.self="modal = null">
+        <div class="modal" role="dialog">
+            <div class="modal-head">
+                <h2>Submission</h2>
+                <button type="button" class="btn btn-sm btn-ghost" @click="modal = null">Close</button>
+            </div>
+            <div class="modal-body" x-show="activeSub">
+                <dl class="detail-grid">
+                    <div><dt>Subject</dt><dd x-text="activeSub?.subject"></dd></div>
+                    <div>
+                        <dt>From</dt>
+                        <dd>
+                            <span x-text="activeSub?.name"></span>
+                            <template x-if="activeSub?.email"><span> · <a :href="'mailto:'+activeSub.email" x-text="activeSub.email" style="color:var(--accent);"></a></span></template>
+                            <template x-if="activeSub?.phone"><span> · <a :href="'tel:'+activeSub.phone" x-text="activeSub.phone" style="color:var(--accent);"></a></span></template>
+                        </dd>
+                    </div>
+                    <div><dt>Date</dt><dd x-text="activeSub?.date"></dd></div>
+                    <div><dt>Message</dt><dd><div class="message-box" x-text="activeSub?.message || '-'"></div></dd></div>
+                </dl>
+            </div>
+            <div class="modal-foot">
+                <button type="button" class="btn btn-danger" @click="confirmDelSub(activeSub)">Delete</button>
+                <button type="button" class="btn btn-primary" @click="modal = null">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm -->
+    <div class="overlay" x-show="modal === 'confirm'" x-cloak @click.self="modal = null">
+        <div class="modal" role="dialog" style="width:min(380px,100%);">
+            <div class="modal-head">
+                <h2 x-text="confirmTitle"></h2>
+                <button type="button" class="btn btn-sm btn-ghost" @click="modal = null">Close</button>
+            </div>
+            <div class="modal-body"><p x-text="confirmMsg"></p></div>
+            <div class="modal-foot">
+                <button type="button" class="btn btn-ghost" @click="modal = null">Cancel</button>
+                <button type="button" class="btn btn-danger" @click="execDel()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toasts" aria-live="polite">
+        <template x-for="t in toasts" :key="t.id">
+            <div class="toast" x-text="t.msg"></div>
+        </template>
+    </div>
+
+    <!-- Offscreen printable menu: exactly 2 letter pages (816x1056) -->
+    <div id="menu-print-host" aria-hidden="true">
+        <div id="menu-print">
+            <div class="mp-page" id="menu-page-1">
+                <div class="mp-header" :class="source === 'catering' && 'no-qr'">
+                    <div class="mp-header-brand">
+                        <div class="mp-brand">El Sombrero Express</div>
+                        <div class="mp-sub" x-text="source === 'catering' ? 'Catering Menu' : 'Authentic Mexican Food & Takeout'"></div>
+                        <div class="mp-contact">
+                            <span x-text="meta.phone"></span> · <span x-text="meta.website"></span>
+                        </div>
+                        <div class="mp-contact" x-text="meta.address"></div>
+                    </div>
+                    <div class="mp-header-qr" x-show="source === 'takeout'">
+                        <img x-show="cateringQr" :src="cateringQr" alt="Catering QR code" width="60" height="60">
+                        <span>Catering</span>
+                    </div>
+                </div>
+                <div class="mp-body">
+                <div class="mp-cols">
+                    <div class="mp-col">
+                        <template x-for="c in page1Left" :key="'p1l'+c">
+                            <div class="mp-cat">
+                                <div class="mp-cat-title" x-text="c"></div>
+                                <template x-if="isCompactCat(c)">
+                                    <div class="mp-compact">
+                                        <template x-for="item in itemsFor(c)" :key="item.id">
+                                            <div class="mp-compact-row">
+                                                <span class="mp-name-wrap"><span class="mp-name" x-text="item.name"></span></span>
+                                                <span class="mp-price" x-text="item.price"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template x-if="!isCompactCat(c)">
+                                    <div>
+                                        <template x-for="item in itemsFor(c)" :key="item.id">
+                                            <div class="mp-item">
+                                                <div class="mp-item-row">
+                                                    <span class="mp-name-wrap"><span class="mp-name" x-text="item.name"></span></span>
+                                                    <span class="mp-price-block" x-show="item.price || item.price2">
+                                                        <span class="mp-price" x-show="item.price" x-text="item.price"></span>
+                                                        <span class="mp-price2" x-show="item.price2" x-text="(item.price2Label ? item.price2Label + ' ' : '') + item.price2"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="mp-desc" x-show="item.description" x-text="printDesc(item.description)"></div>
+                                                <div class="mp-addons" x-show="item.addons" x-text="item.addons"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="mp-col">
+                        <template x-for="c in page1Right" :key="'p1r'+c">
+                            <div class="mp-cat">
+                                <div class="mp-cat-title" x-text="c"></div>
+                                <template x-if="isCompactCat(c)">
+                                    <div class="mp-compact">
+                                        <template x-for="item in itemsFor(c)" :key="item.id">
+                                            <div class="mp-compact-row">
+                                                <span class="mp-name-wrap"><span class="mp-name" x-text="item.name"></span></span>
+                                                <span class="mp-price" x-text="item.price || ''"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template x-if="!isCompactCat(c)">
+                                    <div>
+                                        <template x-for="item in itemsFor(c)" :key="item.id">
+                                            <div class="mp-item">
+                                                <div class="mp-item-row">
+                                                    <span class="mp-name-wrap"><span class="mp-name" x-text="item.name"></span></span>
+                                                    <span class="mp-price-block" x-show="item.price || item.price2">
+                                                        <span class="mp-price" x-show="item.price" x-text="item.price"></span>
+                                                        <span class="mp-price2" x-show="item.price2" x-text="(item.price2Label ? item.price2Label + ' ' : '') + item.price2"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="mp-desc" x-show="item.description" x-text="printDesc(item.description)"></div>
+                                                <div class="mp-addons" x-show="item.addons" x-text="item.addons"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                </div><!-- .mp-body -->
+            </div>
+
+            <div class="mp-page" id="menu-page-2">
+                <div class="mp-body">
+                <div class="mp-cols">
+                    <div class="mp-col">
+                        <template x-for="c in page2Left" :key="'p2l'+c">
+                            <div class="mp-cat">
+                                <div class="mp-cat-title" x-text="c"></div>
+                                <template x-for="item in itemsFor(c)" :key="item.id">
+                                    <div class="mp-item">
+                                        <div class="mp-item-row">
+                                            <span class="mp-name-wrap"><span class="mp-name" x-text="item.name"></span></span>
+                                            <span class="mp-price-block" x-show="item.price || item.price2">
+                                                <span class="mp-price" x-show="item.price" x-text="item.price"></span>
+                                                <span class="mp-price2" x-show="item.price2" x-text="(item.price2Label ? item.price2Label + ' ' : '') + item.price2"></span>
+                                            </span>
+                                        </div>
+                                        <div class="mp-desc" x-show="item.description" x-text="printDesc(item.description)"></div>
+                                        <div class="mp-addons" x-show="item.addons" x-text="item.addons"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="mp-col">
+                        <template x-for="c in page2Right" :key="'p2r'+c">
+                            <div class="mp-cat">
+                                <div class="mp-cat-title" x-text="c"></div>
+                                <template x-if="isCompactCat(c)">
+                                    <div class="mp-compact">
+                                        <template x-for="item in itemsFor(c)" :key="item.id">
+                                            <div class="mp-compact-row">
+                                                <span class="mp-name-wrap"><span class="mp-name" x-text="item.name"></span></span>
+                                                <span class="mp-price" x-text="item.price || ''"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template x-if="!isCompactCat(c)">
+                                    <div>
+                                        <template x-for="item in itemsFor(c)" :key="item.id">
+                                            <div class="mp-item">
+                                                <div class="mp-item-row">
+                                                    <span class="mp-name-wrap"><span class="mp-name" x-text="item.name"></span></span>
+                                                    <span class="mp-price-block" x-show="item.price || item.price2">
+                                                        <span class="mp-price" x-show="item.price" x-text="item.price"></span>
+                                                        <span class="mp-price2" x-show="item.price2" x-text="(item.price2Label ? item.price2Label + ' ' : '') + item.price2"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="mp-desc" x-show="item.description" x-text="printDesc(item.description)"></div>
+                                                <div class="mp-addons" x-show="item.addons" x-text="item.addons"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                </div><!-- .mp-body -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function admin() {
+    const TAKEOUT_LAYOUT = {
+        page1Left: ['Chips & Dips', 'Enchiladas', 'Tacos'],
+        page1Right: ['Burritos', 'Burgers', 'Kids Plates'],
+        page2Left: ['Entrees', 'Quesadillas', 'Fajitas'],
+        page2Right: ['Salads & Soups', 'Desserts', 'Drinks', 'Carne Asada'],
+        version: 4
+    };
+    const CATERING_LAYOUT = {
+        page1Left: ['Party Trays', 'Taco Bars', 'Packages'],
+        page1Right: ['Enchilada Trays', 'Burrito Trays', 'Sides', 'Extras'],
+        page2Left: [],
+        page2Right: [],
+        version: 1
+    };
+    const COMPACT_CATS = ['Chips & Dips', 'Sides', 'Extras'];
+    // Stable public URL for printed QR (never bake localhost into the PDF)
+    const CATERING_URL = 'https://www.elsombreroexpress.com/public/catering.pdf';
+    const DEFAULT_LIMITS = {
+        maxItems: 75,
+        maxDescription: 140,
+        maxAddons: 70,
+        maxName: 40
+    };
+    const CATERING_LIMITS = {
+        maxItems: 60,
+        maxDescription: 160,
+        maxAddons: 80,
+        maxName: 48
+    };
+
+    return {
+        tab: 'catalog',
+        source: 'takeout', // 'takeout' | 'catering'
+        navOpen: false,
+        modal: null,
+        dirty: false,
+        generating: false,
+        layoutVersion: TAKEOUT_LAYOUT.version,
+        printLayout: JSON.parse(JSON.stringify(TAKEOUT_LAYOUT)),
+        meta: {
+            phone: '575-323-3322',
+            website: 'www.elsombreroexpress.com',
+            address: '115 S. Roadrunner Parkway, Las Cruces, NM 88011',
+            closedNote: ''
+        },
+        limits: { ...DEFAULT_LIMITS },
+        categories: [],
+        items: [],
+        catFilter: '',
+        mSearch: '',
+        statusFilter: '',
+        editItem: {},
+        submissions: [],
+        activeSub: null,
+        sSearch: '',
+        confirmTitle: '',
+        confirmMsg: '',
+        confirmKind: '',
+        confirmId: null,
+        toasts: [],
+        cateringQr: '',
+        cateringUrl: CATERING_URL,
+
+        get menuApi() { return this.source === 'catering' ? '/api/catering-menu' : '/api/menu'; },
+        get pdfApi() { return this.source === 'catering' ? '/api/catering-menu-pdf' : '/api/menu-pdf'; },
+        get pdfFilename() { return this.source === 'catering' ? 'catering.pdf' : 'menu.pdf'; },
+        get canonicalLayout() {
+            return this.source === 'catering' ? CATERING_LAYOUT : TAKEOUT_LAYOUT;
+        },
+        get defaultLimits() {
+            return this.source === 'catering' ? CATERING_LIMITS : DEFAULT_LIMITS;
+        },
+
+        get unreadCount() { return this.submissions.filter(s => !s.read).length; },
+        get printCount() { return this.items.filter(i => i.active && i.category !== 'Party Ordering').length; },
+        get activeItems() { return this.items.filter(i => i.active); },
+        get allLayoutCats() {
+            const L = this.printLayout;
+            return [...L.page1Left, ...L.page1Right, ...L.page2Left, ...L.page2Right, 'Party Ordering'];
+        },
+        get page1Left() { return this.printLayout.page1Left.filter(c => this.itemsFor(c).length); },
+        get page1Right() { return this.printLayout.page1Right.filter(c => this.itemsFor(c).length); },
+        get page2Left() { return this.printLayout.page2Left.filter(c => this.itemsFor(c).length); },
+        get page2Right() {
+            const known = this.allLayoutCats;
+            const extras = this.categories.filter(c =>
+                !known.includes(c) && this.itemsFor(c).length
+            );
+            return [...this.printLayout.page2Right, ...extras].filter(c => this.itemsFor(c).length);
+        },
+        get filteredItems() {
+            let list = this.items;
+            if (this.catFilter) list = list.filter(i => i.category === this.catFilter);
+            if (this.statusFilter === 'active') list = list.filter(i => i.active);
+            if (this.statusFilter === 'hidden') list = list.filter(i => !i.active);
+            if (this.mSearch) {
+                const q = this.mSearch.toLowerCase();
+                list = list.filter(i =>
+                    (i.name || '').toLowerCase().includes(q) ||
+                    (i.description || '').toLowerCase().includes(q) ||
+                    (i.category || '').toLowerCase().includes(q)
+                );
+            }
+            return list;
+        },
+        get filteredSubmissions() {
+            let list = this.submissions;
+            if (this.sSearch) {
+                const q = this.sSearch.toLowerCase();
+                list = list.filter(s =>
+                    (s.name || '').toLowerCase().includes(q) ||
+                    (s.email || '').toLowerCase().includes(q) ||
+                    (s.subject || '').toLowerCase().includes(q) ||
+                    (s.message || '').toLowerCase().includes(q)
+                );
+            }
+            return list;
+        },
+
+        itemsFor(cat) {
+            return this.items.filter(i => i.active && i.category === cat);
+        },
+        isCompactCat(cat) {
+            return COMPACT_CATS.includes(cat);
+        },
+        priceLine(item) {
+            const parts = [];
+            if (item.price) parts.push(item.price);
+            if (item.price2) {
+                const label = item.price2Label ? item.price2Label + ' ' : '';
+                parts.push(label + item.price2);
+            }
+            return parts.join(' · ');
+        },
+        printDesc(str, max) {
+            const limit = max || this.limits.maxDescription || 140;
+            if (!str) return '';
+            const cleaned = String(str).replace(/\s+/g, ' ').trim();
+            if (cleaned.length <= limit) return cleaned;
+            // Prefer full sentences only — never leave dangling words like "served" / "Add"
+            const window = cleaned.slice(0, limit + 1);
+            let best = '';
+            const re = /[^.!?]*[.!?]/g;
+            let m;
+            while ((m = re.exec(window)) !== null) {
+                const next = (best + m[0]).trim();
+                if (next.length <= limit) best = next;
+                else break;
+            }
+            if (best.length >= 40) return best;
+            const cut = cleaned.slice(0, limit);
+            const lastSpace = cut.lastIndexOf(' ');
+            const base = (lastSpace > 40 ? cut.slice(0, lastSpace) : cut).replace(/[.,;:]+$/, '').trim();
+            const badEnds = /^(.*)\b(served|with|and|or|a|an|the|of|for|to|add)$/i;
+            const fixed = base.replace(badEnds, '$1').trim().replace(/[.,;:]+$/, '').trim();
+            return fixed + '...';
+        },
+        trimField(value, max) {
+            // Keep complete stored copy; only hard-cap on save if truly over limit
+            const v = String(value || '').replace(/\s+/g, ' ').trim();
+            if (v.length <= max) return v;
+            const window = v.slice(0, max + 1);
+            let best = '';
+            const re = /[^.!?]*[.!?]/g;
+            let m;
+            while ((m = re.exec(window)) !== null) {
+                const next = (best + m[0]).trim();
+                if (next.length <= max) best = next;
+                else break;
+            }
+            if (best.length >= 30) return best;
+            const cut = v.slice(0, max);
+            const lastSpace = cut.lastIndexOf(' ');
+            return (lastSpace > 30 ? cut.slice(0, lastSpace) : cut).replace(/[.,;:]+$/, '').trim();
+        },
+        clip(str, n) {
+            if (!str) return '';
+            return str.length > n ? str.slice(0, n) + '...' : str;
+        },
+        /** Spread a little leftover height into item spacing — never blow up category gaps. */
+        balancePrintColumns() {
+            document.querySelectorAll('#menu-print .mp-col').forEach((col) => {
+                col.style.gap = '';
+                col.querySelectorAll('.mp-item, .mp-compact').forEach((el) => {
+                    el.style.marginBottom = '';
+                });
+            });
+            document.querySelectorAll('#menu-print .mp-col').forEach((col) => {
+                const cats = [...col.querySelectorAll(':scope > .mp-cat')];
+                if (!cats.length) return;
+                const gap = parseFloat(getComputedStyle(col).gap) || 0;
+                const contentH = cats.reduce((sum, c) => sum + c.offsetHeight, 0) + gap * Math.max(0, cats.length - 1);
+                const free = col.clientHeight - contentH;
+                if (free < 8) return;
+
+                const blocks = [...col.querySelectorAll('.mp-item, .mp-compact')];
+                if (!blocks.length) return;
+
+                // Only pad when there is clear free space — never push content off-page
+                // Never inflate spacing if a column is already near full
+                if (free < 24) return;
+                const maxPer = cats.length === 1 ? 8 : 4;
+                const per = Math.min(maxPer, free / blocks.length);
+                blocks.forEach((el) => {
+                    const base = parseFloat(getComputedStyle(el).marginBottom) || 0;
+                    el.style.marginBottom = (base + per) + 'px';
+                });
+            });
+        },
+        canAddToPrint() {
+            return this.printCount < this.limits.maxItems;
+        },
+        guardPrintToggle(event) {
+            if (this.editItem.active && !this.editItem.id && !this.canAddToPrint()) {
+                this.editItem.active = false;
+                if (event && event.target) event.target.checked = false;
+                this.notify('Printed menu is full (' + this.limits.maxItems + ' max). Remove one first.');
+            } else if (this.editItem.active && this.editItem.id) {
+                const already = this.items.find(i => i.id === this.editItem.id && i.active);
+                if (!already && !this.canAddToPrint()) {
+                    this.editItem.active = false;
+                    if (event && event.target) event.target.checked = false;
+                    this.notify('Printed menu is full (' + this.limits.maxItems + ' max). Remove one first.');
+                }
+            }
+        },
+
+        async init() {
+            this.buildCateringQr();
+            await this.loadData();
+        },
+
+        async switchCatalog(source) {
+            if (this.source === source && this.tab === 'catalog') {
+                this.navOpen = false;
+                return;
+            }
+            if (this.dirty) {
+                const ok = window.confirm('You have unsaved changes. Switch catalog and discard them?');
+                if (!ok) return;
+            }
+            this.source = source;
+            this.tab = 'catalog';
+            this.navOpen = false;
+            this.catFilter = '';
+            this.mSearch = '';
+            this.statusFilter = '';
+            this.dirty = false;
+            await this.loadData();
+        },
+
+        buildCateringQr() {
+            try {
+                if (typeof QRCode === 'undefined') return;
+                const hold = document.createElement('div');
+                hold.style.cssText = 'position:fixed;left:-9999px;top:0;';
+                document.body.appendChild(hold);
+                new QRCode(hold, {
+                    text: this.cateringUrl,
+                    width: 148,
+                    height: 148,
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                setTimeout(() => {
+                    const canvas = hold.querySelector('canvas');
+                    const img = hold.querySelector('img');
+                    if (!canvas && !img) {
+                        hold.remove();
+                        return;
+                    }
+                    const pad = 16;
+                    const stroke = 3;
+                    const w = (canvas ? canvas.width : img.naturalWidth) || 148;
+                    const h = (canvas ? canvas.height : img.naturalHeight) || 148;
+                    const out = document.createElement('canvas');
+                    out.width = w + pad * 2;
+                    out.height = h + pad * 2;
+                    const ctx = out.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, out.width, out.height);
+                    if (canvas) ctx.drawImage(canvas, pad, pad);
+                    else ctx.drawImage(img, pad, pad, w, h);
+                    // Frame drawn inside the bitmap so PDF capture can't clip a CSS border
+                    ctx.strokeStyle = '#1a1a1a';
+                    ctx.lineWidth = stroke;
+                    ctx.strokeRect(stroke / 2, stroke / 2, out.width - stroke, out.height - stroke);
+                    this.cateringQr = out.toDataURL('image/png');
+                    hold.remove();
+                }, 200);
+            } catch (e) {
+                console.warn('QR build failed', e);
+                this.cateringQr = '';
+            }
+        },
+
+        async loadData() {
+            try {
+                const mr = await fetch(this.menuApi + '?_=' + Date.now());
+                if (mr.ok) {
+                    const data = await mr.json();
+                    this.meta = {
+                        phone: '575-323-3322',
+                        website: 'www.elsombreroexpress.com',
+                        address: '115 S. Roadrunner Parkway, Las Cruces, NM 88011',
+                        closedNote: '',
+                        ...(data.meta || {})
+                    };
+                    this.limits = { ...this.defaultLimits, ...(data.meta && data.meta.printLimits ? data.meta.printLimits : {}) };
+                    this.applyCanonicalLayout(data.meta && data.meta.printLayout);
+                    this.categories = data.categories && data.categories.length
+                        ? data.categories
+                        : this.allLayoutCats;
+                    this.items = JSON.parse(JSON.stringify(data.items || []));
+                    this.dirty = false;
+                }
+            } catch (e) {
+                this.notify('Could not load menu.');
+            }
+            try {
+                const sr = await fetch('/api/submissions');
+                if (sr.ok) {
+                    const d = await sr.json();
+                    this.submissions = d.submissions || [];
+                }
+            } catch (e) {
+                this.notify('Could not load submissions.');
+            }
+        },
+
+        /** Force known-good page assignment for the active catalog. */
+        applyCanonicalLayout(fromServer) {
+            const base = JSON.parse(JSON.stringify(this.canonicalLayout));
+            let serverOk = false;
+            if (fromServer && Array.isArray(fromServer.page1Left) && Array.isArray(fromServer.page2Left)) {
+                if (this.source === 'takeout') {
+                    serverOk = fromServer.page2Left.includes('Quesadillas')
+                        && !fromServer.page1Left.includes('Quesadillas');
+                } else {
+                    serverOk = true;
+                }
+            }
+            this.printLayout = serverOk
+                ? {
+                    page1Left: fromServer.page1Left,
+                    page1Right: fromServer.page1Right || base.page1Right,
+                    page2Left: fromServer.page2Left,
+                    page2Right: fromServer.page2Right || base.page2Right,
+                    version: base.version
+                }
+                : base;
+            this.layoutVersion = this.printLayout.version;
+            this.meta = { ...this.meta, printLayout: this.printLayout };
+        },
+
+        notify(msg) {
+            const id = Date.now() + Math.random();
+            this.toasts.push({ id, msg });
+            setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id); }, 3000);
+        },
+
+        payload() {
+            return {
+                meta: {
+                    ...this.meta,
+                    printLimits: this.limits,
+                    printLayout: this.printLayout
+                },
+                categories: this.categories,
+                items: this.items
+            };
+        },
+
+        async saveMenu() {
+            this.applyCanonicalLayout(this.canonicalLayout);
+            try {
+                const res = await fetch(this.menuApi, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.payload())
+                });
+                const d = await res.json();
+                if (!d.success) throw new Error();
+                this.dirty = false;
+                this.notify((this.source === 'catering' ? 'Catering menu' : 'Takeout menu') + ' saved.');
+            } catch (e) {
+                this.notify('Error saving menu.');
+            }
+        },
+
+        discard() {
+            this.loadData().then(() => this.notify('Changes discarded.'));
+        },
+
+        openAddItem() {
+            this.editItem = {
+                id: null,
+                name: '',
+                category: this.catFilter || this.categories[0] || 'Tacos',
+                price: '',
+                price2: '',
+                price2Label: '',
+                description: '',
+                addons: '',
+                active: true
+            };
+            this.modal = 'item';
+        },
+        openEditItem(item) {
+            this.editItem = { ...item };
+            this.modal = 'item';
+        },
+        saveItem() {
+            if (!this.editItem.name) return;
+            this.editItem.name = this.trimField(this.editItem.name, this.limits.maxName);
+            this.editItem.description = this.trimField(this.editItem.description, this.limits.maxDescription);
+            this.editItem.addons = this.trimField(this.editItem.addons, this.limits.maxAddons);
+            if (this.editItem.price) {
+                const n = parseFloat(this.editItem.price);
+                if (!Number.isNaN(n)) this.editItem.price = n.toFixed(2);
+            }
+            if (this.editItem.price2) {
+                const n = parseFloat(this.editItem.price2);
+                if (!Number.isNaN(n)) this.editItem.price2 = n.toFixed(2);
+            }
+            const turningOn = !!this.editItem.active;
+            const wasOn = this.editItem.id
+                ? !!(this.items.find(i => i.id === this.editItem.id) || {}).active
+                : false;
+            if (turningOn && !wasOn && !this.canAddToPrint()) {
+                this.notify('Printed menu is full (' + this.limits.maxItems + ' max).');
+                this.editItem.active = false;
+            }
+            if (this.editItem.id) {
+                const idx = this.items.findIndex(i => i.id === this.editItem.id);
+                if (idx !== -1) this.items[idx] = { ...this.editItem };
+                this.notify('Item updated.');
+            } else {
+                this.items.unshift({ ...this.editItem, id: Date.now() });
+                this.notify('Item added.');
+            }
+            this.dirty = true;
+            this.modal = null;
+        },
+        toggleItem(item) {
+            if (item.active) {
+                item.active = false;
+                this.dirty = true;
+                return;
+            }
+            if (!this.canAddToPrint()) {
+                this.notify('Printed menu is full (' + this.limits.maxItems + ' max). Remove one first.');
+                return;
+            }
+            item.active = true;
+            this.dirty = true;
+        },
+        confirmDelItem(item) {
+            this.confirmKind = 'item';
+            this.confirmId = item.id;
+            this.confirmTitle = 'Delete item';
+            this.confirmMsg = 'Remove "' + item.name + '" from the menu?';
+            this.modal = 'confirm';
+        },
+
+        async generateAndPublish() {
+            if (this.dirty) await this.saveMenu();
+            if (typeof html2canvas === 'undefined' || !window.jspdf) {
+                this.notify('PDF libraries failed to load. Refresh and try again.');
+                return;
+            }
+            await this.loadData();
+            this.applyCanonicalLayout(this.canonicalLayout);
+            if (this.printCount > this.limits.maxItems) {
+                this.notify('Too many PDF items (' + this.printCount + '/' + this.limits.maxItems + '). Turn some off.');
+                return;
+            }
+            if (this.source === 'takeout') {
+                this.buildCateringQr();
+                await new Promise(r => setTimeout(r, 320));
+                if (!this.cateringQr) {
+                    this.notify('QR code failed to build. Refresh and try again.');
+                    return;
+                }
+            }
+            this.generating = true;
+            this.notify('Generating ' + this.pdfFilename + '...');
+            await this.$nextTick();
+            await new Promise(r => setTimeout(r, 300));
+
+            if (this.source === 'takeout') {
+                if (this.page1Left.includes('Quesadillas') || this.page1Right.includes('Quesadillas')) {
+                    this.generating = false;
+                    this.notify('Layout error: Quesadillas on page 1. Hard-refresh admin (Ctrl+Shift+R) and try again.');
+                    return;
+                }
+                if (!this.page2Left.includes('Quesadillas') && this.itemsFor('Quesadillas').length) {
+                    this.generating = false;
+                    this.notify('Layout error: Quesadillas missing from page 2. Hard-refresh admin and try again.');
+                    return;
+                }
+            }
+
+            this.balancePrintColumns();
+            await new Promise(r => setTimeout(r, 50));
+
+            const host = document.getElementById('menu-print-host');
+            const prevHost = host ? host.getAttribute('style') : '';
+            if (host) {
+                // Off-screen transform clips borders in html2canvas — park it on-screen for capture
+                host.style.cssText = 'position:fixed;left:0;top:0;transform:none;z-index:-1;pointer-events:none;opacity:0;';
+            }
+
+            const page1 = document.getElementById('menu-page-1');
+            const page2 = document.getElementById('menu-page-2');
+            const { jsPDF } = window.jspdf;
+
+            try {
+                const capture = async (el) => {
+                    const canvas = await html2canvas(el, {
+                        scale: 2,
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: '#fffaf3',
+                        width: 816,
+                        height: 1056,
+                        windowWidth: 900,
+                        windowHeight: 1200,
+                        scrollX: 0,
+                        scrollY: 0,
+                        x: 0,
+                        y: 0
+                    });
+                    return canvas.toDataURL('image/jpeg', 0.95);
+                };
+
+                const img1 = await capture(page1);
+                const pdf = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait', compress: true });
+                pdf.addImage(img1, 'JPEG', 0, 0, 8.5, 11);
+
+                const needPage2 = this.page2Left.length > 0 || this.page2Right.length > 0;
+                let pages = 1;
+                if (needPage2) {
+                    const img2 = await capture(page2);
+                    pdf.addPage();
+                    pdf.addImage(img2, 'JPEG', 0, 0, 8.5, 11);
+                    pages = 2;
+                }
+
+                const blob = pdf.output('blob');
+                const form = new FormData();
+                form.append('pdf', blob, this.pdfFilename);
+                const res = await fetch(this.pdfApi, { method: 'POST', body: form });
+                const d = await res.json();
+                if (!res.ok || !d.success) throw new Error(d.error || 'Publish failed');
+                this.notify((this.source === 'catering' ? 'Catering' : 'Takeout') + ' PDF published (' + pages + ' page' + (pages > 1 ? 's' : '') + ').');
+            } catch (e) {
+                console.error(e);
+                this.notify(e.message || 'PDF generation failed.');
+            } finally {
+                if (host) {
+                    if (prevHost != null && prevHost !== '') host.setAttribute('style', prevHost);
+                    else host.removeAttribute('style');
+                }
+                document.querySelectorAll('#menu-print .mp-col').forEach((col) => {
+                    col.style.gap = '';
+                    col.querySelectorAll('.mp-item, .mp-compact').forEach((el) => {
+                        el.style.marginBottom = '';
+                    });
+                });
+                this.generating = false;
+            }
+        },
+
+        async openSub(sub) {
+            sub.read = true;
+            this.activeSub = sub;
+            this.modal = 'sub';
+            try {
+                await fetch('/api/submissions/' + sub.id, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ read: true })
+                });
+            } catch (e) {}
+        },
+        async markAllRead() {
+            this.submissions.forEach(s => { s.read = true; });
+            await Promise.all(this.submissions.map(s =>
+                fetch('/api/submissions/' + s.id, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ read: true })
+                }).catch(() => {})
+            ));
+            this.notify('All marked as read.');
+        },
+        confirmDelSub(sub) {
+            if (!sub) return;
+            this.confirmKind = 'sub';
+            this.confirmId = sub.id;
+            this.confirmTitle = 'Delete submission';
+            this.confirmMsg = 'This cannot be undone.';
+            this.modal = 'confirm';
+        },
+        async execDel() {
+            const id = this.confirmId;
+            const kind = this.confirmKind;
+            this.modal = null;
+            if (kind === 'item') {
+                this.items = this.items.filter(i => i.id !== id);
+                this.dirty = true;
+                this.notify('Item removed.');
+                return;
+            }
+            try { await fetch('/api/submissions/' + id, { method: 'DELETE' }); } catch (e) {}
+            this.submissions = this.submissions.filter(s => s.id !== id);
+            if (this.activeSub && this.activeSub.id === id) this.activeSub = null;
+            this.notify('Submission deleted.');
+        }
+    };
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catering | El Sombrero Express</title>
+    <meta name="description" content="Catering menu and party trays from El Sombrero Express in Las Cruces, NM.">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <link rel="icon" type="image/x-icon" href="../../public/favicon.ico">
+    <script>
+        (async function () {
+            let url = '../../public/catering.pdf';
+            try {
+                const res = await fetch('/api/catering-menu-pdf?_=' + Date.now());
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!data.exists) {
+                        document.getElementById('msg').hidden = false;
+                        return;
+                    }
+                    const v = data.modified ? new Date(data.modified).getTime() : Date.now();
+                    url = '../../public/catering.pdf?v=' + v;
+                }
+            } catch (e) {}
+            window.location.replace(url);
+        })();
+    </script>
+</head>
+<body>
+    <p id="msg" hidden style="font-family: system-ui, sans-serif; padding: 2rem; max-width: 36rem; line-height: 1.5;">
+        Catering menu PDF is not published yet. Call <a href="tel:5753233322">575-323-3322</a>
+        or email <a href="mailto:elsombreroexpress@gmail.com">elsombreroexpress@gmail.com</a>.
+        <br><br>
+        <a href="../../index.html">Back to home</a>
+    </p>
+    <p style="font-family: system-ui, sans-serif; padding: 2rem;">Opening catering menu… <a href="../../public/catering.pdf">Click here if it does not open</a>.</p>
+</body>
+</html>

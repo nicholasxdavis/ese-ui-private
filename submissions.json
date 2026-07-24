@@ -1,0 +1,69 @@
+{
+  "submissions": [
+    {
+      "id": 1784918024318,
+      "name": "Smoke Test",
+      "email": "smoke@example.com",
+      "phone": "5755550100",
+      "subject": "Production smoke",
+      "message": "Automated smoke test — safe to ignore/delete.",
+      "date": "July 24, 2026",
+      "timestamp": "2026-07-24T18:33:44.440Z",
+      "read": false,
+      "stage": "New Inquiry",
+      "crmNote": ""
+    },
+    {
+      "id": 1784917982930,
+      "name": "Smoke Test",
+      "email": "smoke@example.com",
+      "phone": "5755550100",
+      "subject": "Production smoke",
+      "message": "Automated smoke test — safe to ignore/delete.",
+      "date": "July 24, 2026",
+      "timestamp": "2026-07-24T18:33:02.991Z",
+      "read": false,
+      "stage": "New Inquiry",
+      "crmNote": ""
+    },
+    {
+      "id": 501,
+      "name": "Elena Rostova",
+      "email": "elena@gmail.com",
+      "phone": "(575) 441-9201",
+      "subject": "Catering Inquiry for Wedding Reception",
+      "message": "Hello! We are hosting approximately 80 guests in October and would like to inquire about the fajita bar pricing and setup options. Can you provide a quote?",
+      "date": "July 14, 2026",
+      "timestamp": "2026-07-14T15:30:00.000Z",
+      "read": true,
+      "stage": "New Inquiry",
+      "crmNote": "Needs quote for 80 person fajita bar by Friday."
+    },
+    {
+      "id": 502,
+      "name": "Marcus Vance",
+      "email": "mvance@outlook.com",
+      "phone": "(575) 883-1102",
+      "subject": "California Burrito Question",
+      "message": "Do you offer gluten-free tortillas for your burritos or can the California burrito be prepared in a bowl?",
+      "date": "July 13, 2026",
+      "timestamp": "2026-07-13T12:10:00.000Z",
+      "read": true,
+      "stage": "In Progress",
+      "crmNote": "Staff checking bowl availability."
+    },
+    {
+      "id": 503,
+      "name": "David Miller",
+      "email": "dmiller@nmsu.edu",
+      "phone": "(575) 646-0021",
+      "subject": "Takeout Order Receipt Request",
+      "message": "Could you please forward the itemized receipt for order #1049 placed yesterday evening? Need it for department reimbursement.",
+      "date": "July 10, 2026",
+      "timestamp": "2026-07-10T09:45:00.000Z",
+      "read": true,
+      "stage": "Resolved",
+      "crmNote": "Receipt forwarded to dmiller@nmsu.edu."
+    }
+  ]
+}

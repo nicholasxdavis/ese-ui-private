@@ -1,0 +1,6 @@
+# Copy to facebook-post-urls.txt (repo root).
+# One public Facebook share or post URL per line.
+# The scraper uses curl + Open Graph (Meta blocks Python urllib with HTTP 400).
+# Caption/title must include: special, specials, or special of the day
+#
+# https://www.facebook.com/share/p/YOUR_POST_ID/

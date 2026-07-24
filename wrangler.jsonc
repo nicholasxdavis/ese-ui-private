@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "el-sombrero-express",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-07-24",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": [
+      "/api/*",
+      "/public/menu.pdf",
+      "/public/catering.pdf"
+    ]
+  },
+  "kv_namespaces": [
+    {
+      "binding": "DATA",
+      "id": "0df6e94205c146ad84a2448345417efa"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

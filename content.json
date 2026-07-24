@@ -1,0 +1,942 @@
+{
+  "links": {
+    "chownow": "https://www.chownow.com/order/775/locations/1049",
+    "facebook": "https://www.facebook.com/elsombreroexpress/",
+    "email": "elsombreroexpress@gmail.com",
+    "phone": "(575) 323-3322",
+    "phoneRaw": "5753233322",
+    "maps": "https://www.google.com/maps/dir/?api=1&destination=El+Sombrero+Express+Las+Cruces",
+    "instagram": "https://www.instagram.com/el_sombrero_express/"
+  },
+  "wording": {
+    "heroTitleLine1": "El Sombrero",
+    "heroTitleLine2": "Express",
+    "heroSubtitle": "FRESH, FAST & FLAVORFUL",
+    "aboutHeading": "About Us",
+    "aboutText": "Quick and friendly while maintaining the highest quality of freshness and flavor that has been enjoyed by loyal El Sombrero Express patrons since 2013. We offer a full menu available for curbside pickup."
+  },
+  "menu": {
+    "meta": {
+      "phone": "575-323-3322",
+      "website": "www.elsombreroexpress.com",
+      "address": "115 S. Roadrunner Parkway, Las Cruces, NM 88011",
+      "closedNote": "",
+      "partyNote": "Scan for catering info. Trays and party packages available.",
+      "printLimits": {
+        "maxItems": 75,
+        "maxDescription": 140,
+        "maxAddons": 70,
+        "maxName": 40
+      },
+      "printLayout": {
+        "page1Left": [
+          "Chips & Dips",
+          "Enchiladas",
+          "Tacos"
+        ],
+        "page1Right": [
+          "Burritos",
+          "Burgers",
+          "Kids Plates"
+        ],
+        "page2Left": [
+          "Entrees",
+          "Quesadillas",
+          "Fajitas"
+        ],
+        "page2Right": [
+          "Salads & Soups",
+          "Desserts",
+          "Drinks",
+          "Carne Asada"
+        ],
+        "version": 4
+      }
+    },
+    "categories": [
+      "Chips & Dips",
+      "Enchiladas",
+      "Tacos",
+      "Entrees",
+      "Quesadillas",
+      "Fajitas",
+      "Burritos",
+      "Burgers",
+      "Kids Plates",
+      "Salads & Soups",
+      "Desserts",
+      "Drinks",
+      "Carne Asada",
+      "Party Ordering"
+    ],
+    "items": [
+      {
+        "id": 1001,
+        "category": "Chips & Dips",
+        "name": "Tostadas Half Bag",
+        "price": "2.00",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1002,
+        "category": "Chips & Dips",
+        "name": "Tostadas Full Bag",
+        "price": "3.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1003,
+        "category": "Chips & Dips",
+        "name": "Tostadas Party Bag",
+        "price": "8.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1004,
+        "category": "Chips & Dips",
+        "name": "Salsa 8oz",
+        "price": "3.25",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1005,
+        "category": "Chips & Dips",
+        "name": "Salsa Pint",
+        "price": "5.25",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1006,
+        "category": "Chips & Dips",
+        "name": "Salsa Quart",
+        "price": "10.25",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1007,
+        "category": "Chips & Dips",
+        "name": "Chile Con Queso 8oz",
+        "price": "3.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1008,
+        "category": "Chips & Dips",
+        "name": "Chile Con Queso Pint",
+        "price": "7.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1009,
+        "category": "Chips & Dips",
+        "name": "Chile Con Queso Quart",
+        "price": "14.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1010,
+        "category": "Chips & Dips",
+        "name": "Guacamole 8oz",
+        "price": "5.25",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1011,
+        "category": "Chips & Dips",
+        "name": "Guacamole Pint",
+        "price": "9.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1012,
+        "category": "Chips & Dips",
+        "name": "Guacamole Quart",
+        "price": "18.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1013,
+        "category": "Chips & Dips",
+        "name": "Mini Chips & Salsa",
+        "price": "2.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1014,
+        "category": "Chips & Dips",
+        "name": "Mini Chips & CCQ",
+        "price": "3.25",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1015,
+        "category": "Chips & Dips",
+        "name": "Mini Double Dip",
+        "price": "4.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1016,
+        "category": "Chips & Dips",
+        "name": "Triple Dip",
+        "price": "8.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1017,
+        "category": "Enchiladas",
+        "name": "Red or Green Enchiladas",
+        "price": "6.25",
+        "price2": "",
+        "price2Label": "",
+        "description": "Three flat corn tortillas with lettuce & tomato; onions on request.",
+        "addons": "Add beans & rice 2.25 · Add meat 2.50 · Add egg 1.25",
+        "active": true
+      },
+      {
+        "id": 1018,
+        "category": "Enchiladas",
+        "name": "Rainbow Enchiladas",
+        "price": "6.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "One red, one green, and one sour cream cheese enchilada with lettuce & tomato.",
+        "addons": "Add beans & rice 2.25 · Add meat 2.50 · Add egg 1.25",
+        "active": true
+      },
+      {
+        "id": 1019,
+        "category": "Tacos",
+        "name": "Folded Tacos",
+        "price": "6.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "Three crisp corn shells with beef or chicken, lettuce, tomato & cheese.",
+        "addons": "Add beans & rice 2.25",
+        "active": true
+      },
+      {
+        "id": 1020,
+        "category": "Tacos",
+        "name": "Rolled Tacos",
+        "price": "6.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "Four crisp rolled tortillas with beef or chicken, toppings, and sour cream & guacamole or chile con queso.",
+        "addons": "Add beans & rice 2.25",
+        "active": true
+      },
+      {
+        "id": 1021,
+        "category": "Tacos",
+        "name": "Flautas",
+        "price": "9.15",
+        "price2": "9.75",
+        "price2Label": "Flour",
+        "description": "Two large flautas with shredded beef or chicken, beans, rice, sour cream, guacamole & cheese.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1022,
+        "category": "Tacos",
+        "name": "Sombrero Tacos",
+        "price": "8.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Three steamed corn tortillas with marinated steak, onion, jalapeno & tomato, lettuce and cheese.",
+        "addons": "Add beans & rice 2.25",
+        "active": true
+      },
+      {
+        "id": 1023,
+        "category": "Tacos",
+        "name": "Veggie Tacos",
+        "price": "8.15",
+        "price2": "",
+        "price2Label": "",
+        "description": "Three mini flour tortillas with guacamole, grilled mushrooms & tomatoes, lettuce and cheese.",
+        "addons": "Add beans & rice 2.25",
+        "active": true
+      },
+      {
+        "id": 1024,
+        "category": "Tacos",
+        "name": "Relleno Tacos",
+        "price": "8.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "Three soft corn tortillas with chile relleno, beans, lettuce, tomato & cheese.",
+        "addons": "Add beans & rice 2.25",
+        "active": true
+      },
+      {
+        "id": 1025,
+        "category": "Entrees",
+        "name": "Combo #1",
+        "price": "9.25",
+        "price2": "",
+        "price2Label": "",
+        "description": "Ground beef gordita, rolled taco, and red or green cheese enchilada with beans & rice.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1026,
+        "category": "Entrees",
+        "name": "Combo #2",
+        "price": "9.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Red pork tamale, folded taco, and red or green cheese enchilada with beans & rice.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1027,
+        "category": "Entrees",
+        "name": "Combo #3",
+        "price": "9.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Folded taco, chile con carne, and red & green cheese enchiladas with beans & rice.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1028,
+        "category": "Entrees",
+        "name": "Combo #4",
+        "price": "9.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Chile relleno, two cheese enchiladas, and a folded or veggie taco with beans & rice.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1029,
+        "category": "Entrees",
+        "name": "Tostadas Compuestas",
+        "price": "9.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Three crisp corn cups with beans, chile con carne, lettuce, tomato, cheese & rice.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1030,
+        "category": "Entrees",
+        "name": "Huevos Rancheros",
+        "price": "9.35",
+        "price2": "",
+        "price2Label": "",
+        "description": "Two corn tortillas with eggs, chile con carne and cheese. Beans, rice & tortilla.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1031,
+        "category": "Entrees",
+        "name": "Sombrero Steak",
+        "price": "10.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "Hamburger steak with grilled veggies or chile con queso. Fries or beans, guacamole & tortilla.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1032,
+        "category": "Entrees",
+        "name": "Gordita Plate",
+        "price": "9.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Three gorditas with ground beef, shredded beef, or chicken, topped with lettuce, tomato & cheese.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1033,
+        "category": "Entrees",
+        "name": "Chile Relleno Plate",
+        "price": "8.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "Two cheese-stuffed green chiles with sauce, beans, rice, garnish & tortilla.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1034,
+        "category": "Entrees",
+        "name": "Nachos",
+        "price": "9.25",
+        "price2": "",
+        "price2Label": "",
+        "description": "Tostadas with beans, cheese, jalapenos, meat choice, lettuce & tomato. Sour cream & guacamole.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1035,
+        "category": "Entrees",
+        "name": "Stuffed Sopaipillas",
+        "price": "9.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Two sopaipillas stuffed with beans and red (pork) or green (beef) chile con carne.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1036,
+        "category": "Entrees",
+        "name": "Chile Con Carne Plate",
+        "price": "8.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Red (pork) or green (beef) chile con carne with beans, rice and a flour tortilla.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1037,
+        "category": "Entrees",
+        "name": "Express Bowl",
+        "price": "8.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "Fajita meat, veggies, beans, rice, tortilla strips, sauce, lettuce, tomato & cheese.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1038,
+        "category": "Quesadillas",
+        "name": "Quesadilla Chica",
+        "price": "6.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Two crisp flour tortillas stuffed with cheese.",
+        "addons": "Side of sour cream and guacamole",
+        "active": true
+      },
+      {
+        "id": 1039,
+        "category": "Quesadillas",
+        "name": "Quesadilla Grande",
+        "price": "9.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Flour tortillas with beef or chicken, refried beans & cheese.",
+        "addons": "Side of sour cream and guacamole",
+        "active": true
+      },
+      {
+        "id": 1040,
+        "category": "Quesadillas",
+        "name": "Quesadilla Fajita",
+        "price": "9.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Flour tortillas with beef or chicken fajita meat & cheese.",
+        "addons": "Side of sour cream and guacamole",
+        "active": true
+      },
+      {
+        "id": 1041,
+        "category": "Fajitas",
+        "name": "Fajitas Traditional",
+        "price": "12.75",
+        "price2": "22.95",
+        "price2Label": "For Two",
+        "description": "Beef or chicken with onions & peppers, plus full fajita sides.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1042,
+        "category": "Fajitas",
+        "name": "Fajitas Calientes",
+        "price": "12.75",
+        "price2": "22.95",
+        "price2Label": "For Two",
+        "description": "Beef or chicken with onion, jalapenos & green chile, plus full fajita sides.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1043,
+        "category": "Burritos",
+        "name": "BYOB Burrito (Two Items)",
+        "price": "3.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Choose two: Bacon, Sausage, Chorizo, Egg, Potato, Green Chile, rice.",
+        "addons": "Additional items .85",
+        "active": true
+      },
+      {
+        "id": 1044,
+        "category": "Burritos",
+        "name": "Chile Relleno Burrito",
+        "price": "4.95",
+        "price2": "7.75",
+        "price2Label": "Plate",
+        "description": "Served with refried beans inside. All burritos include cheese.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1045,
+        "category": "Burritos",
+        "name": "Bean & Cheese Burrito",
+        "price": "3.75",
+        "price2": "6.95",
+        "price2Label": "Plate",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1046,
+        "category": "Burritos",
+        "name": "Chile con Carne Burrito",
+        "price": "5.75",
+        "price2": "8.75",
+        "price2Label": "Plate",
+        "description": "Choice of red (pork) or green (beef) chile con carne.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1047,
+        "category": "Burritos",
+        "name": "Meat Burrito",
+        "price": "5.95",
+        "price2": "8.75",
+        "price2Label": "Plate",
+        "description": "Ground beef, shredded beef, or shredded chicken.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1048,
+        "category": "Burritos",
+        "name": "Fajita Burrito",
+        "price": "5.95",
+        "price2": "9.05",
+        "price2Label": "Plate",
+        "description": "Beef or chicken fajita meat with onions and bell peppers.",
+        "addons": "Smother with queso or enchilada sauce 1.95",
+        "active": true
+      },
+      {
+        "id": 1049,
+        "category": "Burgers",
+        "name": "Classic Hamburger",
+        "price": "7.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "Garnish on the side. Served with French fries.",
+        "addons": "Add cheese or bacon 1.25 · Add green chile .85",
+        "active": true
+      },
+      {
+        "id": 1050,
+        "category": "Burgers",
+        "name": "Sombrero Burger",
+        "price": "9.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Cheese, guacamole & bacon. Served with French fries.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1051,
+        "category": "Burgers",
+        "name": "Green Chile Cheese Burger",
+        "price": "9.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Cheese & chopped green chile. Served with French fries.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1052,
+        "category": "Kids Plates",
+        "name": "Sombrero #1",
+        "price": "4.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Mini cheese quesadilla, served with refried beans and rice.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1053,
+        "category": "Kids Plates",
+        "name": "Sombrero #2",
+        "price": "5.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Two rolled ground beef tacos, served with refried beans and rice.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1054,
+        "category": "Kids Plates",
+        "name": "Sombrero #3",
+        "price": "4.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Mini flour tortilla bean burrito served with French fries.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1055,
+        "category": "Kids Plates",
+        "name": "Sombrero #4",
+        "price": "5.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "Three chicken tenders, served with French fries and dip.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1056,
+        "category": "Salads & Soups",
+        "name": "Taco Salad",
+        "price": "8.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "Crisp tortilla shell with meat choice, beans, tomato, cheese, cucumber & guacamole.",
+        "addons": "Dressing & sour cream on the side",
+        "active": true
+      },
+      {
+        "id": 1057,
+        "category": "Salads & Soups",
+        "name": "Sizzle Strip Salad",
+        "price": "9.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Greens with fajita meat, mushrooms, onion, tomato, cheese, strips, avocado & cucumber.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1058,
+        "category": "Salads & Soups",
+        "name": "Sombrero Steak Salad",
+        "price": "9.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Mixed greens with diced marinated steak, grilled mushrooms, tomatoes, cheese & avocado.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1059,
+        "category": "Salads & Soups",
+        "name": "Pint Posole",
+        "price": "6.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Served with onion, limes, oregano, and a bolillo.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1060,
+        "category": "Salads & Soups",
+        "name": "Quart Posole",
+        "price": "10.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Served with onion, limes, oregano, and a bolillo.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1061,
+        "category": "Desserts",
+        "name": "Raspberry Bites (4)",
+        "price": "5.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "Fried pastries with raspberry & cheesecake. Side of raspberry sauce.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1062,
+        "category": "Desserts",
+        "name": "Homemade Empanada",
+        "price": "2.45",
+        "price2": "",
+        "price2Label": "",
+        "description": "Ask for the flavor of the day.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1063,
+        "category": "Desserts",
+        "name": "Sopaipilla",
+        "price": "1.35",
+        "price2": "5.25",
+        "price2Label": "Order of 4",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1064,
+        "category": "Desserts",
+        "name": "Cinnamon & Sugar Sopaipilla",
+        "price": "1.45",
+        "price2": "5.65",
+        "price2Label": "Order of 4",
+        "description": "",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1065,
+        "category": "Desserts",
+        "name": "Churro Bites (8)",
+        "price": "5.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Served with caramel, strawberry and chocolate sauce.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1066,
+        "category": "Drinks",
+        "name": "Fountain & House Drinks",
+        "price": "",
+        "price2": "",
+        "price2Label": "",
+        "description": "Pepsi products, lemonade, teas, bottled water & aguas frescas.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1067,
+        "category": "Carne Asada",
+        "name": "Carne Asada Tacos",
+        "price": "10.95",
+        "price2": "",
+        "price2Label": "",
+        "description": "Three soft corn tortillas with carne asada, onions & cilantro. Guacamole and limes.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1068,
+        "category": "Carne Asada",
+        "name": "Carne Asada Nachos",
+        "price": "11.25",
+        "price2": "",
+        "price2Label": "",
+        "description": "Tostadas with chile con queso, carne asada, onions and cilantro.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1069,
+        "category": "Carne Asada",
+        "name": "Carne Asada Fries",
+        "price": "8.25",
+        "price2": "",
+        "price2Label": "",
+        "description": "French fries topped with Chile con Queso, carne asada, onions and cilantro.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1070,
+        "category": "Carne Asada",
+        "name": "Carne Asada Burrito",
+        "price": "11.25",
+        "price2": "",
+        "price2Label": "",
+        "description": "Carne asada, guacamole, onions and cilantro.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1071,
+        "category": "Carne Asada",
+        "name": "Carne Asada Taco Salad",
+        "price": "10.75",
+        "price2": "",
+        "price2Label": "",
+        "description": "Crisp tortilla shell with carne asada, beans, tomato, cheese, lettuce & guacamole.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 1072,
+        "category": "Party Ordering",
+        "name": "Party Trays & Packages",
+        "price": "",
+        "price2": "",
+        "price2Label": "",
+        "description": "Trays of enchiladas, rolled or folded tacos, flautas, chile rellenos, chips, salsa & more.",
+        "addons": "Call for details",
+        "active": false
+      }
+    ]
+  },
+  "cateringMenu": {
+    "meta": {
+      "phone": "575-323-3322",
+      "website": "www.elsombreroexpress.com",
+      "address": "115 S. Roadrunner Parkway, Las Cruces, NM 88011",
+      "closedNote": "",
+      "partyNote": "Call for custom party trays and packages.",
+      "printLimits": {
+        "maxItems": 60,
+        "maxDescription": 160,
+        "maxAddons": 80,
+        "maxName": 48
+      },
+      "printLayout": {
+        "page1Left": [
+          "Party Trays",
+          "Taco Bars",
+          "Packages"
+        ],
+        "page1Right": [
+          "Enchilada Trays",
+          "Burrito Trays",
+          "Sides",
+          "Extras"
+        ],
+        "page2Left": [],
+        "page2Right": [],
+        "version": 1
+      }
+    },
+    "categories": [
+      "Party Trays",
+      "Taco Bars",
+      "Enchilada Trays",
+      "Burrito Trays",
+      "Sides",
+      "Packages",
+      "Extras"
+    ],
+    "items": [
+      {
+        "id": 9001,
+        "category": "Party Trays",
+        "name": "Enchilada Tray",
+        "price": "Call",
+        "price2": "",
+        "price2Label": "",
+        "description": "Cheese, chicken, or beef enchiladas. Serves a crowd — call for tray sizes and pricing.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 9002,
+        "category": "Taco Bars",
+        "name": "Taco Bar Package",
+        "price": "Call",
+        "price2": "",
+        "price2Label": "",
+        "description": "Build-your-own taco bar with shells, meats, and toppings. Great for parties and offices.",
+        "addons": "",
+        "active": true
+      },
+      {
+        "id": 9003,
+        "category": "Packages",
+        "name": "Party Trays & Packages",
+        "price": "Call",
+        "price2": "",
+        "price2Label": "",
+        "description": "Trays of enchiladas, rolled or folded tacos, flautas, chile rellenos, and more. Call for details.",
+        "addons": "",
+        "active": true
+      }
+    ]
+  }
+}

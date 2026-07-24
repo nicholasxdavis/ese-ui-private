@@ -1,0 +1,4 @@
+# One Facebook share or post URL per line (curl + Open Graph; requires curl.exe on PATH).
+# Keywords required in caption/title: special, specials, or special of the day
+# Page: https://www.facebook.com/elsombreroexpress/
+https://www.facebook.com/share/p/14YXEbC1wLB/

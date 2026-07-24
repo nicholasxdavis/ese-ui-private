@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us | El Sombrero Express</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/styles.css">
+    <meta name="description" content="Contact El Sombrero Express in Las Cruces, NM.">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" type="image/x-icon" href="../../public/favicon.ico">
+    <link rel="apple-touch-icon" href="../../public/icon-192.png">
+    <link rel="manifest" href="../../site.webmanifest">
+</head>
+<body class="about-body">
+    <header class="header">
+        <div class="logo" onclick="window.location.href='../../index.html'">
+            <img src="../../public/logo.png" alt="El Sombrero Express logo">
+        </div>
+        <div class="right-section">
+            <nav class="nav-links">
+                <a href="../../public/menu.pdf" target="_blank" rel="noopener">Menu</a>
+                <a href="../../public/catering.pdf" target="_blank" rel="noopener">Catering</a>
+                <a href="../about/index.html">About Us</a>
+                <a href="../../index.html#location">Location</a>
+                <a href="../contact/index.html" class="active">Contact Us</a>
+            </nav>
+            <a href="https://www.chownow.com/order/775/locations/1049" target="_blank" rel="noopener" class="order-btn">
+                Order Online
+                <svg width="20" height="20" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true">
+                    <path d="M0,295.5c0,69.352,56.216,125.582,125.568,125.582h260.834C455.77,421.082,512,364.852,512,295.5H0z"/>
+                    <path d="M256.008,90.918c-76.208,0-95.268,100.028-109.559,185.767h219.11C351.275,190.946,332.216,90.918,256.008,90.918z"/>
+                </svg>
+            </a>
+            <button class="hamburger" id="menuToggle" aria-label="Toggle Menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 6H20M4 12H20M4 18H20" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="about-main">
+        <div class="about-wrap contact-wrap">
+            <h1 class="about-h1">Contact Us</h1>
+            <p class="about-p">
+                <a href="tel:5753233322">(575) 323-3322</a><br>
+                <a href="mailto:elsombreroexpress@gmail.com">elsombreroexpress@gmail.com</a><br>
+                115 Roadrunner Pkwy, Las Cruces, NM 88011
+            </p>
+
+            <form id="contactForm" class="contact-form" novalidate>
+                <label>
+                    <span>Name</span>
+                    <input type="text" name="name" required autocomplete="name">
+                </label>
+                <label>
+                    <span>Email</span>
+                    <input type="email" name="email" required autocomplete="email">
+                </label>
+                <label>
+                    <span>Phone</span>
+                    <input type="tel" name="phone" autocomplete="tel">
+                </label>
+                <label>
+                    <span>Message</span>
+                    <textarea name="message" rows="5" required></textarea>
+                </label>
+                <button type="submit" class="contact-submit" id="contactSubmit">Send</button>
+                <p class="contact-status" id="contactStatus" role="status" aria-live="polite"></p>
+            </form>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <p>El Sombrero Express &copy; 2026 All Rights Reserved</p>
+        <a href="mailto:elsombreroexpress@gmail.com">elsombreroexpress@gmail.com</a>
+    </footer>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <button class="close-btn" id="menuClose" aria-label="Close Menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 18L18 6M6 6L18 18" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <nav class="mobile-nav-links">
+            <a href="../../public/menu.pdf" target="_blank" rel="noopener">Menu</a>
+            <a href="../../public/catering.pdf" target="_blank" rel="noopener">Catering</a>
+            <a href="../about/index.html">About Us</a>
+            <a href="../../index.html#location">Location</a>
+            <a href="../contact/index.html">Contact Us</a>
+        </nav>
+    </div>
+
+    <script src="../../js/menu.js" defer></script>
+    <script src="../../js/content-loader.js" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('contactForm');
+            const status = document.getElementById('contactStatus');
+            const submit = document.getElementById('contactSubmit');
+            if (!form) return;
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                status.textContent = '';
+                submit.disabled = true;
+                const data = Object.fromEntries(new FormData(form).entries());
+                try {
+                    const res = await fetch('/api/contact', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const json = await res.json();
+                    if (!res.ok || !json.success) throw new Error(json.error || 'Send failed');
+                    status.textContent = json.message || 'Thanks. We will get back to you soon.';
+                    form.reset();
+                } catch (err) {
+                    status.textContent = err.message || 'Something went wrong. Please call us.';
+                } finally {
+                    submit.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

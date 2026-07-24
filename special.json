@@ -1,0 +1,27 @@
+{
+  "updatedAt": "2026-07-13T22:36:11.745237+00:00",
+  "source": "facebook-og",
+  "found": true,
+  "post": {
+    "network": "facebook",
+    "title": "-$8.95 Tuesday Special!",
+    "link": "https://www.facebook.com/elsombreroexpress/posts/895-tuesday-special-%EF%B8%8Fjalape%C3%B1o-cheeseburger%EF%B8%8F%EF%B8%8Fcall-3233322-to-order-pick-up-115-ro/1436530065153417/",
+    "published": "2026-07-13T22:36:11.709244+00:00",
+    "captionText": "El Sombrero Express\n-$8.95 Tuesday Special! \n-Jalapeño Cheeseburger‼️\n-Call 323–3322 to order \nPick up 115 Roadrunner Pkwy April 21\n-Taco Tuesday Plates - $8",
+    "image": "https://scontent-den2-1.xx.fbcdn.net/v/t39.30808-6/674436779_1435890641884026_2149061320662876365_n.jpg?stp=dst-jpg_tt6&cstp=mx1290x1276&ctp=p600x600&_nc_cat=103&ccb=1-7&_nc_sid=b96d88&_nc_ohc=8nFa7PvIf8sQ7kNvwEXUZq4&_nc_oc=AdqXz0giKSKEga1yoTeID5UiBMtHzP9PiPutjOrNDiVCugg--YnPS9Y6oEC_BT9n3xmEQTjNfLGs5HW-WDPV-jAw&_nc_zt=23&_nc_ht=scontent-den2-1.xx&_nc_gid=_-DE-IW6f-qMtTHgEMa6Zw&_nc_ss=7d20f&oh=00_AQBXzdqFjqzkOLiJ0EMjvoGo_92WPpW2rDmQecI3kM27uw&oe=6A5B3B3B"
+  },
+  "posts": [
+    {
+      "network": "facebook",
+      "title": "-$8.95 Tuesday Special!",
+      "link": "https://www.facebook.com/elsombreroexpress/posts/895-tuesday-special-%EF%B8%8Fjalape%C3%B1o-cheeseburger%EF%B8%8F%EF%B8%8Fcall-3233322-to-order-pick-up-115-ro/1436530065153417/",
+      "published": "2026-07-13T22:36:11.709244+00:00",
+      "captionText": "El Sombrero Express\n-$8.95 Tuesday Special! \n-Jalapeño Cheeseburger‼️\n-Call 323–3322 to order \nPick up 115 Roadrunner Pkwy April 21\n-Taco Tuesday Plates - $8",
+      "image": "https://scontent-den2-1.xx.fbcdn.net/v/t39.30808-6/674436779_1435890641884026_2149061320662876365_n.jpg?stp=dst-jpg_tt6&cstp=mx1290x1276&ctp=p600x600&_nc_cat=103&ccb=1-7&_nc_sid=b96d88&_nc_ohc=8nFa7PvIf8sQ7kNvwEXUZq4&_nc_oc=AdqXz0giKSKEga1yoTeID5UiBMtHzP9PiPutjOrNDiVCugg--YnPS9Y6oEC_BT9n3xmEQTjNfLGs5HW-WDPV-jAw&_nc_zt=23&_nc_ht=scontent-den2-1.xx&_nc_gid=_-DE-IW6f-qMtTHgEMa6Zw&_nc_ss=7d20f&oh=00_AQBXzdqFjqzkOLiJ0EMjvoGo_92WPpW2rDmQecI3kM27uw&oe=6A5B3B3B"
+    }
+  ],
+  "errors": [
+    "fetch_failed:https://rsshub.app/facebook/page/elsombreroexpress",
+    "fetch_failed:https://rsshub.rssforever.com/facebook/page/elsombreroexpress"
+  ]
+}

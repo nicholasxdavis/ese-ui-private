@@ -1,0 +1,54 @@
+# Scheduled "git scraping": refresh special.json and commit if it changed.
+# Optional repo Variables (Settings → Secrets and variables → Actions → Variables):
+#   RSSHUB_BASE — comma-separated RSSHub bases
+#   FACEBOOK_PAGE_ID (default: elsombreroexpress)
+#   INSTAGRAM_USERNAME (optional)
+#   SPECIAL_TZ (default: America/Denver)
+
+name: Update special of the day
+
+on:
+  schedule:
+    - cron: "15 */4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-special-of-the-day
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build special.json
+        env:
+          RSSHUB_BASE: ${{ vars.RSSHUB_BASE }}
+          FACEBOOK_PAGE_ID: ${{ vars.FACEBOOK_PAGE_ID }}
+          INSTAGRAM_USERNAME: ${{ vars.INSTAGRAM_USERNAME }}
+          SPECIAL_TZ: ${{ vars.SPECIAL_TZ }}
+        run: python scripts/update_special.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add special.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: update special.json [skip ci]"
+            git push
+          fi

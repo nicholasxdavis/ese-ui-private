@@ -1,0 +1,21 @@
+{
+  "name": "El Sombrero Express",
+  "short_name": "El Sombrero",
+  "description": "Authentic Mexican takeout and catering in Las Cruces, NM.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#3F7D3B",
+  "theme_color": "#1a1a1a",
+  "icons": [
+    {
+      "src": "public/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "public/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
