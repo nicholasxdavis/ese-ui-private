@@ -225,26 +225,29 @@
         renderCurrent(window.__specialMeta || {});
     }
 
-    const FALLBACK_SPECIAL = {
-        id: 'fallback-menudo',
-        title: 'Menudo',
-        captionText:
-            'Menudo Special!\n' +
-            'Classic house menudo with onion, oregano & lime\n' +
-            'Call 323-3322 to order\n' +
-            'Pick up 115 Roadrunner Pkwy\n' +
-            'Hot & ready - while it lasts',
-        image: 'public/collage/plate-pozole.png',
-        link: 'https://www.facebook.com/elsombreroexpress/'
-    };
+    const section = document.getElementById('special') || document.querySelector('.special-section');
+
+    function hideSection() {
+        if (section) section.hidden = true;
+        if (statusEl) {
+            statusEl.textContent = '';
+            statusEl.hidden = true;
+        }
+    }
+
+    function showSection() {
+        if (section) section.hidden = false;
+    }
 
     function showPosts(list, meta) {
         posts = Array.isArray(list) ? list.filter(Boolean) : [];
         index = 0;
         window.__specialMeta = meta || {};
         if (!posts.length) {
-            posts = [FALLBACK_SPECIAL];
+            hideSection();
+            return;
         }
+        showSection();
         if (posts.length > 1) ensureNav();
         renderCurrent(meta || {});
     }
@@ -262,7 +265,6 @@
                 go(index + 1);
             }
         });
-        // Light swipe on the card area
         let touchX = null;
         wrapEl.addEventListener(
             'touchstart',
@@ -290,17 +292,25 @@
             return r.json();
         })
         .then((data) => {
+            if (!data || data.found === false) {
+                hideSection();
+                return;
+            }
             let list =
                 Array.isArray(data.posts) && data.posts.length
                     ? data.posts
                     : data.post
                       ? [data.post]
                       : [];
-            // Trust server selection; only drop empty captions without images
             list = list.filter((p) => p && (p.captionText || p.title || p.image));
+            // Drop stale fallback-only payloads with no real scrape
+            if (!list.length) {
+                hideSection();
+                return;
+            }
             showPosts(list, data);
         })
         .catch(() => {
-            showPosts([FALLBACK_SPECIAL], { updatedAt: new Date().toISOString(), stale: true });
+            hideSection();
         });
 })();

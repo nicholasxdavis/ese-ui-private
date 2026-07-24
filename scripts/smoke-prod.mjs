@@ -96,8 +96,26 @@ results.push(
 );
 
 results.push(
-  await check('GET /admin/', async () => {
-    await mustOk('/admin/');
+  await check('GET /admin/login.html', async () => {
+    await mustOk('/admin/login.html');
+  })
+);
+
+results.push(
+  await check('GET /admin/ redirects to login', async () => {
+    const res = await fetch(base + '/admin/', { redirect: 'manual' });
+    if (res.status !== 302 && res.status !== 301) {
+      throw new Error('expected redirect, got ' + res.status);
+    }
+    const loc = res.headers.get('location') || '';
+    if (!/login/i.test(loc)) throw new Error('redirect not to login: ' + loc);
+  })
+);
+
+results.push(
+  await check('GET /api/submissions unauthorized', async () => {
+    const res = await fetch(base + '/api/submissions', { cache: 'no-store' });
+    if (res.status !== 401) throw new Error('expected 401, got ' + res.status);
   })
 );
 

@@ -455,6 +455,9 @@
                     <span class="pill" x-show="unreadCount > 0" x-text="unreadCount"></span>
                 </button>
             </nav>
+            <div style="margin-top:auto;padding:0.65rem;">
+                <button type="button" class="btn btn-sm" style="width:100%;justify-content:center;background:#27272a;color:#fff;border-color:#3f3f46;" @click="logout()">Sign out</button>
+            </div>
         </aside>
 
         <main class="main">
@@ -1098,7 +1101,44 @@ function admin() {
             }
         },
 
+        async api(url, opts = {}) {
+            const res = await fetch(url, {
+                credentials: 'include',
+                cache: 'no-store',
+                ...opts,
+                headers: {
+                    ...(opts.body && !(opts.body instanceof FormData)
+                        ? { 'Content-Type': 'application/json' }
+                        : {}),
+                    ...(opts.headers || {})
+                }
+            });
+            if (res.status === 401) {
+                location.replace('/admin/login.html');
+                throw new Error('Unauthorized');
+            }
+            return res;
+        },
+
+        async logout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+            } catch (_) {}
+            location.replace('/admin/login.html');
+        },
+
         async init() {
+            try {
+                const me = await fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' });
+                const data = await me.json();
+                if (!data || !data.authenticated) {
+                    location.replace('/admin/login.html');
+                    return;
+                }
+            } catch (_) {
+                location.replace('/admin/login.html');
+                return;
+            }
             this.buildCateringQr();
             await this.loadData();
         },
@@ -1168,7 +1208,7 @@ function admin() {
 
         async loadData() {
             try {
-                const mr = await fetch(this.menuApi + '?_=' + Date.now());
+                const mr = await this.api(this.menuApi + '?_=' + Date.now());
                 if (mr.ok) {
                     const data = await mr.json();
                     this.meta = {
@@ -1190,7 +1230,7 @@ function admin() {
                 this.notify('Could not load menu.');
             }
             try {
-                const sr = await fetch('/api/submissions');
+                const sr = await this.api('/api/submissions');
                 if (sr.ok) {
                     const d = await sr.json();
                     this.submissions = d.submissions || [];
@@ -1246,9 +1286,8 @@ function admin() {
         async saveMenu() {
             this.applyCanonicalLayout(this.canonicalLayout);
             try {
-                const res = await fetch(this.menuApi, {
+                const res = await this.api(this.menuApi, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(this.payload())
                 });
                 const d = await res.json();
@@ -1422,7 +1461,7 @@ function admin() {
                 const blob = pdf.output('blob');
                 const form = new FormData();
                 form.append('pdf', blob, this.pdfFilename);
-                const res = await fetch(this.pdfApi, { method: 'POST', body: form });
+                const res = await this.api(this.pdfApi, { method: 'POST', body: form });
                 const d = await res.json();
                 if (!res.ok || !d.success) throw new Error(d.error || 'Publish failed');
                 this.notify((this.source === 'catering' ? 'Catering' : 'Takeout') + ' PDF published (' + pages + ' page' + (pages > 1 ? 's' : '') + ').');
@@ -1449,9 +1488,8 @@ function admin() {
             this.activeSub = sub;
             this.modal = 'sub';
             try {
-                await fetch('/api/submissions/' + sub.id, {
+                await this.api('/api/submissions/' + sub.id, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ read: true })
                 });
             } catch (e) {}
@@ -1459,9 +1497,8 @@ function admin() {
         async markAllRead() {
             this.submissions.forEach(s => { s.read = true; });
             await Promise.all(this.submissions.map(s =>
-                fetch('/api/submissions/' + s.id, {
+                this.api('/api/submissions/' + s.id, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ read: true })
                 }).catch(() => {})
             ));
@@ -1485,7 +1522,7 @@ function admin() {
                 this.notify('Item removed.');
                 return;
             }
-            try { await fetch('/api/submissions/' + id, { method: 'DELETE' }); } catch (e) {}
+            try { await this.api('/api/submissions/' + id, { method: 'DELETE' }); } catch (e) {}
             this.submissions = this.submissions.filter(s => s.id !== id);
             if (this.activeSub && this.activeSub.id === id) this.activeSub = null;
             this.notify('Submission deleted.');

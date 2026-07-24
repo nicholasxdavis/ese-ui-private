@@ -81,48 +81,45 @@ server.js                # Local Express only
 ## Daily specials (critical)
 
 Production specials are **KV-backed** (`special` key) and never wiped on scrape failure.
+**No local PC is required** — GitHub Actions + Cloudflare Worker handle scraping.
+
+### Schedule (10am America/Denver)
+
+- GitHub Action: `5 16 * * *` and `5 17 * * *` UTC (covers MDT/MST); skips unless Denver hour is 10 (or manual dispatch)
+- Worker crons: `0 16 * * *` and `0 17 * * *` UTC with the same Denver hour gate + Browser Rendering refresh
 
 ### How it works
 
-1. **GitHub Action hourly** (`Update special of the day`) runs `scripts/push-specials.mjs`  
-   - curl + Open Graph from Facebook share/post URLs (works from GitHub IPs)  
-   - downloads images  
-   - `POST /api/specials/ingest` → caches images in KV + updates payload  
-2. **Worker cron hourly** (`0 * * * *`) runs Browser Rendering + optional Graph API best-effort  
-3. Homepage `js/special.js` reads `/api/specials` and shows a carousel when multiple posts exist  
+1. Action runs hardened `scripts/push-specials.mjs` (UA rotation, retries, cache-bust, RSSHub mirrors, optional `facebook-scraper`, image download)
+2. `POST /api/specials/ingest` with `X-Ingest-Secret` caches images in KV
+3. Worker also attempts Graph API (if token) + Browser Rendering
+4. Homepage hides the Special section when `found` is false / no posts
 
-### Adding / rotating Facebook posts
+### Secrets (Cloudflare Worker)
 
-Edit `facebook-post-urls.txt` (one share or post URL per line), commit, then either:
+| Secret | Purpose |
+|--------|---------|
+| `ADMIN_USER` | Admin login username |
+| `ADMIN_PASSWORD` | Admin login password |
+| `SESSION_SECRET` | Signs admin session cookies |
+| `INGEST_SECRET` | GitHub Action → Worker ingest/refresh auth |
+| `FB_PAGE_ACCESS_TOKEN` | Optional Graph API |
+| `PROXY_URL` | Optional proxy for Action scrapes (GitHub secret too) |
 
-```bash
-npm run specials:push
-```
+Set with: `echo value | npx wrangler secret put NAME`
 
-or wait for the hourly Action / run it from GitHub → Actions → workflow_dispatch.
+GitHub repo secret: `INGEST_SECRET` (same value as Worker).
 
-### Optional Graph API (most reliable long-term)
+### Admin login
 
-```bash
-npx wrangler secret put FB_PAGE_ACCESS_TOKEN
-# optional:
-npx wrangler secret put FB_PAGE_ID
-```
+- URL: `/admin/login.html`
+- Remember me → 30-day cookie; otherwise ~12h
+- Get support → https://www.quantumlinksmarketing.com/
+- Unauthenticated `/admin` redirects to login
 
-When set, the Worker cron prefers Graph API posts that match special keywords.
+### Adding Facebook post URLs
 
-### Manual pin (emergency)
-
-`POST /api/specials` with `{ "manual": true, "manualUntil": "<iso>", "posts": [...] }`  
-Cron will not overwrite until `manualUntil`.
-
-### Commands
-
-```bash
-npm run specials:push
-npm run smoke
-curl -X POST https://el-sombrero-express.nic-58f.workers.dev/api/specials/refresh
-```
+Edit `facebook-post-urls.txt`, commit, then wait for 10am run or Actions → workflow_dispatch.
 
 ---
 
@@ -174,7 +171,7 @@ Same paths as local Express:
 
 PDFs are served at `/public/menu.pdf` and `/public/catering.pdf` from KV first, then static assets.
 
-Optional secret `ADMIN_TOKEN`: if set on the Worker, mutating `/api/*` (except `POST /api/contact`) and reading submissions require `Authorization: Bearer <token>` or `X-Admin-Token: <token>`. Leave unset unless admin UI is updated to send it.
+Mutating `/api/*` (except `POST /api/contact`) and reading submissions require an admin session cookie **or** `X-Ingest-Secret` / Bearer matching `INGEST_SECRET`.
 
 ---
 
@@ -293,11 +290,14 @@ Serves on `http://localhost:3456` and reads/writes local JSON files + `public/*.
 
 Workflow: `.github/workflows/update-special.yml`
 
-- Cron every 4 hours + `workflow_dispatch`
-- Runs `scripts/update_special.py` → may commit `special.json`
-- If secret `CLOUDFLARE_API_TOKEN` exists, syncs `special.json` to KV key `special`
+- Cron `5 16 * * *` and `5 17 * * *` UTC + `workflow_dispatch`
+- Denver hour gate: only runs when local hour is 10 (or manual)
+- Runs hardened `scripts/push-specials.mjs` → `POST /api/specials/ingest` with `INGEST_SECRET`
+- Optional: `PROXY_URL` / `PROXY_URLS`, `APIFY_TOKEN` (paid fallback)
+- Best-effort Worker browser refresh afterward
+- On scrape miss: **safe no-op** (does not wipe KV); homepage keeps last good special or hides when `found: false`
 
-Without that secret, scraped specials update git only — homepage still reads KV via `/api/specials`, so **manually seed** after scrape if Action cannot write KV.
+Required: GitHub secret `INGEST_SECRET` (same value as Worker secret).
 
 ---
 

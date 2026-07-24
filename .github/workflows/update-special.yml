@@ -1,14 +1,16 @@
-# Refresh daily specials from Facebook (OG via curl) and push into Cloudflare KV.
+# Daily specials at ~10am America/Denver (16:05 & 17:05 UTC cover MDT/MST).
+# Requires repo secret: INGEST_SECRET (same value as Cloudflare Worker secret).
 
 name: Update special of the day
 
 on:
   schedule:
-    - cron: "5 * * * *"
+    - cron: "5 16 * * *"
+    - cron: "5 17 * * *"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: update-special-of-the-day
@@ -20,35 +22,65 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          persist-credentials: true
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Scrape Facebook OG + push to Worker KV
+      - name: Set up Python (optional facebook-scraper)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install optional scraper
+        continue-on-error: true
+        run: |
+          pip install --quiet "facebook-scraper" || true
+
+      - name: Denver hour gate (10am only)
+        id: gate
+        run: |
+          HOUR=$(TZ=America/Denver date +%H)
+          echo "denver_hour=$HOUR"
+          echo "hour=$HOUR" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ "$HOUR" = "10" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping — Denver hour is $HOUR (want 10)."
+          fi
+
+      - name: Scrape + ingest to Cloudflare Worker
+        if: steps.gate.outputs.run == 'true'
         env:
           WORKER_BASE: ${{ vars.WORKER_BASE }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          PROXY_URL: ${{ secrets.PROXY_URL }}
+          PROXY_URLS: ${{ secrets.PROXY_URLS }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          APIFY_ACTOR_ID: ${{ vars.APIFY_ACTOR_ID }}
+          FB_PAGE: elsombreroexpress
         run: |
           BASE="${WORKER_BASE:-https://el-sombrero-express.nic-58f.workers.dev}"
+          if [ -z "$INGEST_SECRET" ]; then
+            echo "INGEST_SECRET is required" >&2
+            exit 1
+          fi
           echo "Pushing specials to $BASE"
           node scripts/push-specials.mjs "$BASE"
 
-      - name: Archive special.json in git (best-effort)
+      - name: Trigger Worker browser refresh (best-effort)
+        if: steps.gate.outputs.run == 'true'
         continue-on-error: true
         env:
-          FACEBOOK_PAGE_ID: ${{ vars.FACEBOOK_PAGE_ID }}
-          SPECIAL_TZ: ${{ vars.SPECIAL_TZ }}
+          WORKER_BASE: ${{ vars.WORKER_BASE }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
         run: |
-          python3 scripts/update_special.py || true
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add special.json || true
-          if git diff --staged --quiet; then
-            echo "No special.json changes."
-          else
-            git commit -m "chore: update special.json archive [skip ci]" || true
-            git push || true
-          fi
+          BASE="${WORKER_BASE:-https://el-sombrero-express.nic-58f.workers.dev}"
+          curl -sS -X POST "$BASE/api/specials/refresh?force=1" \
+            -H "X-Ingest-Secret: $INGEST_SECRET" \
+            -H "Content-Type: application/json" \
+            --max-time 120 || true

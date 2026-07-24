@@ -4,6 +4,14 @@
  */
 
 import { refreshSpecials, getSpecialMedia } from './specials.js';
+import {
+  validateCredentials,
+  createSessionToken,
+  sessionCookieHeader,
+  clearSessionCookieHeader,
+  getSession,
+  isAdminRequest
+} from './auth.js';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -167,23 +175,70 @@ function isMutating(method) {
   return method === 'POST' || method === 'PATCH' || method === 'DELETE' || method === 'PUT';
 }
 
-/** Optional admin gate: when ADMIN_TOKEN is set, mutating /api/* (except contact) require it. */
-function adminAuthorized(request, env) {
-  const token = env.ADMIN_TOKEN;
-  if (!token) return true;
-  const header = request.headers.get('Authorization') || '';
-  const bearer = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
-  const alt = request.headers.get('X-Admin-Token') || '';
-  return bearer === token || alt === token;
-}
-
 async function handleApi(request, env, pathname) {
   const method = request.method.toUpperCase();
 
-  // Public contact form — never require admin token
+  // ── Auth ──────────────────────────────────────────────────
+  if (pathname === '/api/auth/login' && method === 'POST') {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: 'Invalid JSON' }, 400);
+    }
+    const ok = await validateCredentials(env, body.username, body.password);
+    if (!ok) {
+      // Soft delay against brute force
+      await new Promise((r) => setTimeout(r, 400));
+      return json({ error: 'Invalid username or password' }, 401);
+    }
+    try {
+      const { token, maxAge } = await createSessionToken(env, {
+        remember: !!body.remember
+      });
+      return new Response(JSON.stringify({ success: true, user: env.ADMIN_USER || 'admin' }), {
+        status: 200,
+        headers: {
+          ...JSON_HEADERS,
+          'Set-Cookie': sessionCookieHeader(token, maxAge)
+        }
+      });
+    } catch (err) {
+      return json({ error: err.message || 'Auth misconfigured' }, 500);
+    }
+  }
+  if (pathname === '/api/auth/logout' && method === 'POST') {
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: {
+        ...JSON_HEADERS,
+        'Set-Cookie': clearSessionCookieHeader()
+      }
+    });
+  }
+  if (pathname === '/api/auth/me' && method === 'GET') {
+    const session = await getSession(request, env);
+    if (!session) return json({ authenticated: false });
+    return json({ authenticated: true, user: session.user });
+  }
+
+  // Public reads + contact stay open. Everything else mutating needs admin.
   const publicWrite = pathname === '/api/contact' && method === 'POST';
-  if (isMutating(method) && !publicWrite && !adminAuthorized(request, env)) {
-    return json({ error: 'Unauthorized' }, 401);
+  const publicRead =
+    method === 'GET' &&
+    (pathname === '/api/content' ||
+      pathname === '/api/menu' ||
+      pathname === '/api/catering-menu' ||
+      pathname === '/api/menu-pdf' ||
+      pathname === '/api/catering-menu-pdf' ||
+      pathname === '/api/specials' ||
+      pathname.startsWith('/api/specials/media/'));
+
+  if (!publicWrite && !publicRead) {
+    const allowed = await isAdminRequest(request, env);
+    if (!allowed) {
+      return json({ error: 'Unauthorized' }, 401);
+    }
   }
 
   if (pathname === '/api/content' && method === 'GET') {
@@ -361,9 +416,6 @@ async function handleApi(request, env, pathname) {
   }
 
   if (pathname === '/api/submissions' && method === 'GET') {
-    if (!adminAuthorized(request, env) && env.ADMIN_TOKEN) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
     return json(await getJson(env, 'submissions', () => ({ submissions: [] })));
   }
   if (pathname === '/api/submissions' && method === 'POST') {
@@ -501,9 +553,21 @@ function noStoreHtml(res) {
 }
 
 export default {
-  async scheduled(_controller, env, ctx) {
+  async scheduled(controller, env, ctx) {
+    // Cron fires at 16:00 and 17:00 UTC; only scrape when Denver local hour is 10.
+    const hour = Number(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Denver',
+        hour: 'numeric',
+        hour12: false
+      }).format(new Date())
+    );
+    if (hour !== 10 && controller.cron !== 'manual') {
+      console.log('specials cron skipped; Denver hour=', hour, 'cron=', controller.cron);
+      return;
+    }
     ctx.waitUntil(
-      refreshSpecials(env).catch((err) => {
+      refreshSpecials(env, { force: true }).catch((err) => {
         console.error('specials cron failed', err);
       })
     );
@@ -513,21 +577,47 @@ export default {
     const url = new URL(request.url);
     const pathname = url.pathname;
 
+    // Gate admin UI (except login page)
+    const isLogin =
+      pathname === '/admin/login.html' ||
+      pathname === '/admin/login' ||
+      pathname === '/admin/login/';
+    const isAdminAsset =
+      pathname === '/admin' ||
+      pathname === '/admin/' ||
+      pathname === '/admin/index.html' ||
+      pathname === '/admin/index';
+
+    if (isLogin) {
+      // Serve login HTML exactly (avoid assets html_handling redirects)
+      return env.ASSETS.fetch(new URL('/admin/login.html', url.origin));
+    }
+    if (isAdminAsset) {
+      const session = await getSession(request, env);
+      if (!session) {
+        return Response.redirect(new URL('/admin/login.html', url.origin), 302);
+      }
+      return env.ASSETS.fetch(new URL('/admin/index.html', url.origin));
+    }
+
     if (pathname.startsWith('/api/')) {
       if (request.method === 'OPTIONS') {
         return new Response(null, {
           status: 204,
           headers: {
-            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Origin': url.origin,
             'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token'
+            'Access-Control-Allow-Headers':
+              'Content-Type, Authorization, X-Admin-Token, X-Ingest-Secret',
+            'Access-Control-Allow-Credentials': 'true'
           }
         });
       }
       try {
         const res = await handleApi(request, env, pathname);
         const headers = new Headers(res.headers);
-        headers.set('Access-Control-Allow-Origin', '*');
+        headers.set('Access-Control-Allow-Origin', url.origin);
+        headers.set('Access-Control-Allow-Credentials', 'true');
         return new Response(res.body, { status: res.status, headers });
       } catch (err) {
         return json({ error: err.message || 'Server error' }, 500);
