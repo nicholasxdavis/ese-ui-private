@@ -1,4 +1,4 @@
-// Special of the Day — reads special.json (git-scraped from Facebook)
+// Special of the Day — reads /api/specials (KV-backed in production)
 (function () {
     const KEYWORDS = ['special of the day', 'specials', 'special'];
     const statusEl = document.getElementById('specialStatus');
@@ -165,9 +165,9 @@
         setUpdated(updatedAt || new Date().toISOString());
     }
 
-    fetch('special.json?t=' + Date.now(), { cache: 'no-store' })
+    fetch('/api/specials?t=' + Date.now(), { cache: 'no-store' })
         .then((r) => {
-            if (!r.ok) throw new Error('special.json HTTP ' + r.status);
+            if (!r.ok) throw new Error('specials HTTP ' + r.status);
             return r.json();
         })
         .then((data) => {

@@ -5,10 +5,12 @@
     "scrape": "node scripts/run-scrape.mjs",
     "serve": "node server.js",
     "start": "npm run scrape && npm run serve",
-    "dev": "npx wrangler@latest dev",
-    "deploy": "npx wrangler@latest deploy",
+    "dev": "node scripts/prepare-assets.mjs && wrangler dev",
+    "deploy": "node scripts/prepare-assets.mjs && wrangler deploy",
+    "prepare:assets": "node scripts/prepare-assets.mjs",
     "seed": "node scripts/seed-kv.mjs",
-    "cf:whoami": "npx wrangler@latest whoami"
+    "smoke": "node scripts/smoke-prod.mjs",
+    "cf:whoami": "wrangler whoami"
   },
   "devDependencies": {
     "serve": "^14.2.4",

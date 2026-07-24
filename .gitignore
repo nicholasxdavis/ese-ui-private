@@ -6,7 +6,7 @@ Thumbs.db
 *.log
 scratch/
 menu-example/
+site/
 public/unused/
-public/collage/
 public/*.b64.txt
 use-for-ref-menu.pdf

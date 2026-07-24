@@ -1,9 +1,13 @@
 /**
- * El Sombrero Express — Cloudflare Worker API
- * Mirrors the Express server routes; persists to KV (DATA).
+ * El Sombrero Express — Cloudflare Worker
+ * Static site via ASSETS + API/data via KV (DATA).
  */
 
-const JSON_HEADERS = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+const JSON_HEADERS = {
+  'Content-Type': 'application/json; charset=utf-8',
+  'Cache-Control': 'no-store'
+};
+
 const PDF_HEADERS = {
   'Content-Type': 'application/pdf',
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -51,7 +55,15 @@ function defaultCateringMenu() {
         version: 1
       }
     },
-    categories: ['Party Trays', 'Taco Bars', 'Enchilada Trays', 'Burrito Trays', 'Sides', 'Packages', 'Extras'],
+    categories: [
+      'Party Trays',
+      'Taco Bars',
+      'Enchilada Trays',
+      'Burrito Trays',
+      'Sides',
+      'Packages',
+      'Extras'
+    ],
     items: []
   };
 }
@@ -79,7 +91,10 @@ function normalizeMenu(raw, fallback) {
   }
   return {
     meta: { ...base.meta, ...(raw.meta || {}) },
-    categories: Array.isArray(raw.categories) && raw.categories.length ? raw.categories : base.categories,
+    categories:
+      Array.isArray(raw.categories) && raw.categories.length
+        ? raw.categories
+        : base.categories,
     items: Array.isArray(raw.items) ? raw.items : []
   };
 }
@@ -98,22 +113,18 @@ async function putJson(env, key, value) {
   await env.DATA.put(key, JSON.stringify(value));
 }
 
-async function servePdf(env, key, publicUrl, filename) {
-  const obj = await env.DATA.get(key, { type: 'arrayBuffer' });
-  if (!obj) {
-    return new Response(filename + ' not found', { status: 404 });
-  }
-  return new Response(obj, { headers: PDF_HEADERS });
-}
-
 async function pdfMeta(env, key, publicUrl, filename) {
   const meta = await env.DATA.getWithMetadata(key, { type: 'arrayBuffer' });
   if (!meta || !meta.value) {
     return json({ exists: false, url: publicUrl, filename });
   }
-  const size = meta.value.byteLength;
-  const modified = (meta.metadata && meta.metadata.modified) || null;
-  return json({ exists: true, url: publicUrl, filename, size, modified });
+  return json({
+    exists: true,
+    url: publicUrl,
+    filename,
+    size: meta.value.byteLength,
+    modified: (meta.metadata && meta.metadata.modified) || null
+  });
 }
 
 async function savePdf(env, request, key, publicUrl, filename) {
@@ -133,6 +144,11 @@ async function savePdf(env, request, key, publicUrl, filename) {
     return json({ error: 'Only PDF files are allowed' }, 400);
   }
   const buf = await file.arrayBuffer();
+  if (!buf.byteLength) return json({ error: 'Empty PDF' }, 400);
+  // Soft guard — KV value limit is 25 MiB
+  if (buf.byteLength > 20 * 1024 * 1024) {
+    return json({ error: 'PDF too large (max 20MB)' }, 400);
+  }
   const modified = new Date().toISOString();
   await env.DATA.put(key, buf, {
     metadata: { modified, contentType: 'application/pdf' }
@@ -145,13 +161,31 @@ async function savePdf(env, request, key, publicUrl, filename) {
   });
 }
 
+function isMutating(method) {
+  return method === 'POST' || method === 'PATCH' || method === 'DELETE' || method === 'PUT';
+}
+
+/** Optional admin gate: when ADMIN_TOKEN is set, mutating /api/* (except contact) require it. */
+function adminAuthorized(request, env) {
+  const token = env.ADMIN_TOKEN;
+  if (!token) return true;
+  const header = request.headers.get('Authorization') || '';
+  const bearer = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  const alt = request.headers.get('X-Admin-Token') || '';
+  return bearer === token || alt === token;
+}
+
 async function handleApi(request, env, pathname) {
   const method = request.method.toUpperCase();
 
-  // Content
+  // Public contact form — never require admin token
+  const publicWrite = pathname === '/api/contact' && method === 'POST';
+  if (isMutating(method) && !publicWrite && !adminAuthorized(request, env)) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+
   if (pathname === '/api/content' && method === 'GET') {
-    const content = await getJson(env, 'content', () => ({}));
-    return json(content);
+    return json(await getJson(env, 'content', () => ({})));
   }
   if (pathname === '/api/content' && method === 'POST') {
     const body = await request.json();
@@ -159,7 +193,6 @@ async function handleApi(request, env, pathname) {
     return json({ success: true, message: 'Content saved successfully' });
   }
 
-  // Menu data
   if (pathname === '/api/menu' && method === 'GET') {
     const content = await getJson(env, 'content', () => ({}));
     return json(normalizeMenu(content.menu, defaultMenu));
@@ -188,7 +221,6 @@ async function handleApi(request, env, pathname) {
     });
   }
 
-  // Menu PDFs (meta + upload)
   if (pathname === '/api/menu-pdf' && method === 'GET') {
     return pdfMeta(env, 'menu.pdf', '/public/menu.pdf', 'menu.pdf');
   }
@@ -202,9 +234,8 @@ async function handleApi(request, env, pathname) {
     return savePdf(env, request, 'catering.pdf', '/public/catering.pdf', 'catering.pdf');
   }
 
-  // Specials
   if (pathname === '/api/specials' && method === 'GET') {
-    return json(await getJson(env, 'special', () => ({ specials: [] })));
+    return json(await getJson(env, 'special', () => ({ posts: [] })));
   }
   if (pathname === '/api/specials' && method === 'POST') {
     const body = await request.json();
@@ -212,8 +243,10 @@ async function handleApi(request, env, pathname) {
     return json({ success: true, message: 'Specials saved successfully' });
   }
 
-  // Submissions
   if (pathname === '/api/submissions' && method === 'GET') {
+    if (!adminAuthorized(request, env) && env.ADMIN_TOKEN) {
+      return json({ error: 'Unauthorized' }, 401);
+    }
     return json(await getJson(env, 'submissions', () => ({ submissions: [] })));
   }
   if (pathname === '/api/submissions' && method === 'POST') {
@@ -241,30 +274,54 @@ async function handleApi(request, env, pathname) {
     return json({ success: true });
   }
 
-  // Contact form
   if (pathname === '/api/contact' && method === 'POST') {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: 'Invalid JSON' }, 400);
+    }
+    const name = String(body.name || '').trim();
+    const email = String(body.email || '').trim();
+    const phone = String(body.phone || '').trim();
+    const subject = String(body.subject || '').trim() || 'General Inquiry';
+    const message = String(body.message || '').trim();
+    if (!name || !email || !message) {
+      return json({ error: 'Name, email, and message are required' }, 400);
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return json({ error: 'Please enter a valid email' }, 400);
+    }
+    if (message.length > 5000) {
+      return json({ error: 'Message is too long' }, 400);
+    }
     const store = await getJson(env, 'submissions', () => ({ submissions: [] }));
-    const { name, email, phone, subject, message } = body;
     const newEntry = {
       id: Date.now(),
-      name: name || 'Anonymous',
-      email: email || '',
-      phone: phone || '',
-      subject: subject || 'General Inquiry',
-      message: message || '',
-      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      name,
+      email,
+      phone,
+      subject,
+      message,
+      date: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
       timestamp: new Date().toISOString(),
       read: false,
       stage: 'New Inquiry',
       crmNote: ''
     };
     store.submissions.unshift(newEntry);
+    // Cap store size
+    if (store.submissions.length > 2000) {
+      store.submissions = store.submissions.slice(0, 2000);
+    }
     await putJson(env, 'submissions', store);
     return json({ success: true, message: 'Thank you! We will be in touch soon.' });
   }
 
-  // Generic upload (images/PDFs) → KV under uploads/{filename}
   if (pathname === '/api/upload' && method === 'POST') {
     let file;
     let targetName = null;
@@ -279,10 +336,19 @@ async function handleApi(request, env, pathname) {
       return json({ error: 'No file uploaded' }, 400);
     }
     const original = file.name || 'upload.bin';
-    const ext = original.includes('.') ? original.slice(original.lastIndexOf('.')).toLowerCase() : '';
+    const ext = original.includes('.')
+      ? original.slice(original.lastIndexOf('.')).toLowerCase()
+      : '';
     const allowed = /\.(jpe?g|png|gif|webp|svg|pdf)$/i;
-    if (!allowed.test(ext) && !(file.type || '').startsWith('image/') && file.type !== 'application/pdf') {
-      return json({ error: 'Only images (jpg, png, gif, webp, svg) and PDFs are allowed.' }, 400);
+    if (
+      !allowed.test(ext) &&
+      !(file.type || '').startsWith('image/') &&
+      file.type !== 'application/pdf'
+    ) {
+      return json(
+        { error: 'Only images (jpg, png, gif, webp, svg) and PDFs are allowed.' },
+        400
+      );
     }
     let filename;
     if (targetName) {
@@ -292,6 +358,9 @@ async function handleApi(request, env, pathname) {
       filename = `${base}_${Date.now()}${ext}`;
     }
     const buf = await file.arrayBuffer();
+    if (buf.byteLength > 20 * 1024 * 1024) {
+      return json({ error: 'File too large (max 20MB)' }, 400);
+    }
     await env.DATA.put(`upload:${filename}`, buf, {
       metadata: { contentType: file.type || 'application/octet-stream' }
     });
@@ -306,6 +375,14 @@ async function handleApi(request, env, pathname) {
   return json({ error: 'Not found' }, 404);
 }
 
+function noStoreHtml(res) {
+  const headers = new Headers(res.headers);
+  headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  headers.set('Pragma', 'no-cache');
+  headers.set('Expires', '0');
+  return new Response(res.body, { status: res.status, headers });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -318,7 +395,7 @@ export default {
           headers: {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type'
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token'
           }
         });
       }
@@ -332,62 +409,53 @@ export default {
       }
     }
 
-    // Live PDFs from KV (admin publish) — fall back to static assets
+    // Live PDFs from KV (admin Generate & publish)
     if (pathname === '/public/menu.pdf' || pathname === '/public/catering.pdf') {
       const key = pathname === '/public/menu.pdf' ? 'menu.pdf' : 'catering.pdf';
-      const filename = key;
-      const obj = await env.DATA.getWithMetadata(key, { type: 'arrayBuffer' });
-      if (obj && obj.value) {
-        return new Response(obj.value, { headers: PDF_HEADERS });
-      }
-      // fall through to assets
+      const obj = await env.DATA.get(key, { type: 'arrayBuffer' });
+      if (obj) return new Response(obj, { headers: PDF_HEADERS });
     }
 
-    // Uploaded files stored in KV
+    // Optional KV uploads overlay static public files
     if (pathname.startsWith('/public/')) {
-      const filename = pathname.slice('/public/'.length);
-      if (filename && !filename.includes('..')) {
-        const obj = await env.DATA.getWithMetadata(`upload:${filename}`, { type: 'arrayBuffer' });
+      const filename = decodeURIComponent(pathname.slice('/public/'.length));
+      if (filename && !filename.includes('..') && !filename.includes('\\')) {
+        const obj = await env.DATA.getWithMetadata(`upload:${filename}`, {
+          type: 'arrayBuffer'
+        });
         if (obj && obj.value) {
           const contentType =
             (obj.metadata && obj.metadata.contentType) || 'application/octet-stream';
           return new Response(obj.value, {
-            headers: { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=3600' }
+            headers: {
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=3600'
+            }
           });
         }
       }
     }
 
-    if (env.ASSETS) {
-      const assetRes = await env.ASSETS.fetch(request);
-      if (assetRes.status !== 404) {
-        // Avoid caching HTML so admin/layout updates show immediately
-        if (/\.html?$/i.test(pathname) || pathname === '/' || pathname.endsWith('/')) {
-          const headers = new Headers(assetRes.headers);
-          headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-          headers.set('Pragma', 'no-cache');
-          headers.set('Expires', '0');
-          return new Response(assetRes.body, { status: assetRes.status, headers });
-        }
-        return assetRes;
+    if (!env.ASSETS) return new Response('Not found', { status: 404 });
+
+    const assetRes = await env.ASSETS.fetch(request);
+    if (assetRes.status !== 404) {
+      if (/\.html?$/i.test(pathname) || pathname === '/' || pathname.endsWith('/')) {
+        return noStoreHtml(assetRes);
       }
-      // Try directory index
-      if (!pathname.includes('.') || pathname.endsWith('/')) {
-        const idx = pathname.endsWith('/') ? pathname + 'index.html' : pathname + '/index.html';
-        const idxRes = await env.ASSETS.fetch(new URL(idx, url.origin));
-        if (idxRes.status !== 404) {
-          const headers = new Headers(idxRes.headers);
-          headers.set('Cache-Control', 'no-store');
-          return new Response(idxRes.body, { status: idxRes.status, headers });
-        }
-      }
-      const notFound = await env.ASSETS.fetch(new URL('/404.html', url.origin));
-      if (notFound.status !== 404) {
-        return new Response(notFound.body, { status: 404, headers: notFound.headers });
-      }
-      return new Response('Not found', { status: 404 });
+      return assetRes;
     }
 
+    if (!pathname.includes('.') || pathname.endsWith('/')) {
+      const idx = pathname.endsWith('/') ? pathname + 'index.html' : pathname + '/index.html';
+      const idxRes = await env.ASSETS.fetch(new URL(idx, url.origin));
+      if (idxRes.status !== 404) return noStoreHtml(idxRes);
+    }
+
+    const notFound = await env.ASSETS.fetch(new URL('/404.html', url.origin));
+    if (notFound.status !== 404) {
+      return new Response(notFound.body, { status: 404, headers: notFound.headers });
+    }
     return new Response('Not found', { status: 404 });
   }
 };

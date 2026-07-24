@@ -1,9 +1,7 @@
-# Scheduled "git scraping": refresh special.json and commit if it changed.
-# Optional repo Variables (Settings → Secrets and variables → Actions → Variables):
-#   RSSHUB_BASE — comma-separated RSSHub bases
-#   FACEBOOK_PAGE_ID (default: elsombreroexpress)
-#   INSTAGRAM_USERNAME (optional)
-#   SPECIAL_TZ (default: America/Denver)
+# Scheduled refresh of special.json + sync to Cloudflare KV.
+# Repo Variables (optional): RSSHUB_BASE, FACEBOOK_PAGE_ID, INSTAGRAM_USERNAME, SPECIAL_TZ
+# Repo Secrets (required for KV sync): CLOUDFLARE_API_TOKEN
+#   Token needs Workers KV Storage Edit on this account.
 
 name: Update special of the day
 
@@ -19,6 +17,9 @@ concurrency:
   group: update-special-of-the-day
   cancel-in-progress: true
 
+env:
+  KV_NAMESPACE_ID: 0df6e94205c146ad84a2448345417efa
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -33,6 +34,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - name: Build special.json
         env:
           RSSHUB_BASE: ${{ vars.RSSHUB_BASE }}
@@ -42,13 +48,26 @@ jobs:
         run: python scripts/update_special.py
 
       - name: Commit and push if changed
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add special.json
           if git diff --staged --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No changes to commit."
           else
             git commit -m "chore: update special.json [skip ci]"
             git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Sync special.json to Cloudflare KV
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx wrangler@latest kv key put special \
+            --namespace-id "$KV_NAMESPACE_ID" \
+            --path special.json \
+            --remote

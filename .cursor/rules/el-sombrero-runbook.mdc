@@ -1,0 +1,9 @@
+---
+description: El Sombrero Express production deploy and ops — read RUNBOOK before changes
+globs:
+alwaysApply: true
+---
+
+Before changing, deploying, or debugging this project, read and follow `RUNBOOK.md` in the repo root.
+
+Production is Cloudflare Workers (`worker/index.js` + KV), not Express. After HTML/CSS/JS/worker changes run `npm run deploy`. After content.json / specials / PDF source changes intended for live, seed KV or publish via admin. Run `npm run smoke` before calling a production task done.

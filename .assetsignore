@@ -1,13 +1,14 @@
-# Deployed as Worker static assets — exclude non-public / heavy / secrets
-node_modules
-.git
-.github
-.wrangler
+# Deployed as Worker static assets — keep this list tight.
+node_modules/
+.git/
+.github/
+.wrangler/
 .dev.vars
-scratch
-menu-example
-scripts
-worker
+scratch/
+menu-example/
+scripts/
+worker/
+site/
 package.json
 package-lock.json
 wrangler.jsonc
@@ -25,7 +26,6 @@ run.bat
 .assetsignore
 .DS_Store
 Thumbs.db
-public/unused
-public/collage
+public/unused/
 public/*.b64.txt
 public/menu_*.pdf
