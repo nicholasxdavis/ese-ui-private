@@ -264,9 +264,20 @@ async function handleApi(request, env, pathname) {
         : [];
     if (!incoming.length) return json({ error: 'No posts to ingest' }, 400);
 
+    // Dedupe by id
+    const seenIds = new Set();
+    const uniqueIncoming = [];
+    for (const raw of incoming) {
+      const id = String(raw.id || '');
+      const key = id || String(raw.captionText || raw.title || '').slice(0, 80);
+      if (seenIds.has(key)) continue;
+      seenIds.add(key);
+      uniqueIncoming.push(raw);
+    }
+
     const previous = (await env.DATA.get('special', 'json')) || {};
     const cached = [];
-    for (const raw of incoming) {
+    for (const raw of uniqueIncoming) {
       const post = {
         id: String(raw.id || Date.now()),
         network: raw.network || 'facebook',

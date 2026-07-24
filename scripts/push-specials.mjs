@@ -178,6 +178,18 @@ if (!posts.length) {
   process.exit(0);
 }
 
+// Dedupe by id / caption
+const deduped = [];
+const seen = new Set();
+for (const p of posts) {
+  const key = p.id || (p.captionText || '').slice(0, 80).toLowerCase();
+  if (seen.has(key)) continue;
+  seen.add(key);
+  deduped.push(p);
+}
+posts.length = 0;
+posts.push(...deduped);
+
 const payload = {
   updatedAt: new Date().toISOString(),
   scrapedAt: new Date().toISOString(),
