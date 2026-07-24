@@ -17,6 +17,8 @@ const SEED_SHARE_URLS = [
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+const UA_FACEBOOK_BOT =
+  'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)';
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -166,13 +168,17 @@ async function fetchText(url, opts = {}) {
 }
 
 async function scrapeOgPost(url) {
-  try {
-    const html = await fetchText(url);
-    if (!html || html.length < 500) return null;
-    return parseOgHtml(html, url, 'facebook-og');
-  } catch {
-    return null;
+  for (const ua of [UA_FACEBOOK_BOT, UA]) {
+    try {
+      const html = await fetchText(url, { ua });
+      if (!html || html.length < 500) continue;
+      const post = parseOgHtml(html, url, 'facebook-og');
+      if (post) return post;
+    } catch {
+      /* try next UA */
+    }
   }
+  return null;
 }
 
 function parseOgHtml(html, url, source) {
