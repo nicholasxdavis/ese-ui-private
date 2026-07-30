@@ -43,8 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // 2. Update wording (if present)
             if (data.wording) {
                 // Hero titles
-                const heroTitleLine1 = document.querySelector('.hero-title span:first-child');
-                const heroTitleLine2 = document.querySelector('.hero-title span:nth-child(2)');
+                const heroTitleLine1 = document.querySelector('.hero-title-line1');
+                const heroTitleLine2 = document.querySelector('.hero-title-line2');
                 const heroSubtitle = document.querySelector('.hero-subtitle');
 
                 if (heroTitleLine1 && data.wording.heroTitleLine1) heroTitleLine1.textContent = data.wording.heroTitleLine1;

@@ -21,6 +21,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       min-height: 100vh;
+      min-height: 100dvh;
       font-family: 'IBM Plex Sans', system-ui, sans-serif;
       background:
         radial-gradient(1200px 600px at 10% -10%, #eceff3 0%, transparent 55%),
@@ -29,7 +30,7 @@
       color: var(--ink);
       display: grid;
       place-items: center;
-      padding: 1.5rem;
+      padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
       -webkit-font-smoothing: antialiased;
     }
     .card {
@@ -38,7 +39,7 @@
       background: var(--card);
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 2rem 1.75rem 1.5rem;
+      padding: 1.75rem 1.35rem 1.35rem;
       box-shadow: 0 18px 40px rgba(24, 24, 27, 0.06);
     }
     .brand {
@@ -66,11 +67,12 @@
     input[type="text"],
     input[type="password"] {
       width: 100%;
-      height: 42px;
+      height: 44px;
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 0 0.8rem;
       font: inherit;
+      font-size: 16px;
       background: #fff;
       color: var(--ink);
     }
@@ -102,7 +104,7 @@
     }
     button[type="submit"] {
       width: 100%;
-      height: 44px;
+      height: 48px;
       border: none;
       border-radius: 8px;
       background: var(--accent);
