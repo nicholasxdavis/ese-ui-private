@@ -507,6 +507,15 @@ body {
     display: block;
     border-radius: 4px;
 }
+/* Food plates with transparent PNG edges — black studio bg in collage only */
+.photo-collage__item--3,
+.photo-collage__item--6 {
+    background-color: #000000;
+}
+.photo-collage__item--3 img,
+.photo-collage__item--6 img {
+    background-color: #000000;
+}
 .photo-collage__item--1 {
     grid-column: 1 / span 5;
     grid-row: 1 / span 4;
